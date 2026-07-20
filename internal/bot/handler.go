@@ -75,13 +75,13 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		}
 
 	} else {
-		newMessage := tgbotapi.NewMessage(msg.Chat.ID, response.Text)
+		editMessage := tgbotapi.NewEditMessageText(msg.Chat.ID, int(response.EditMessageId), response.Text)
 		if response.Keyboard != nil && !response.IsSendMenuMessage {
 			h.appendCancelButton(response.Keyboard)
-			newMessage.ReplyMarkup = response.Keyboard
+			editMessage.ReplyMarkup = response.Keyboard
 		}
-		newMessage.ParseMode = "HTML"
-		sendedMessage, err := h.bot.Send(newMessage)
+		editMessage.ParseMode = "HTML"
+		sendedMessage, err := h.bot.Send(editMessage)
 		if err != nil {
 			slog.Error("MainFlow.handleMessage error_2", "error", err)
 		}

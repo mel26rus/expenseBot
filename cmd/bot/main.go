@@ -3,26 +3,20 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/kardianos/service"
+	"golang.org/x/sys/windows/svc"
 
 	"expense-bot/internal/app"
 	"expense-bot/internal/config"
 	"expense-bot/internal/db"
 	"expense-bot/internal/logger"
+	"expense-bot/internal/servicehost"
 )
-
-type Bot struct {
-	Config *config.AppConfig
-	Logger *slog.Logger
-	DB     *pgxpool.Pool
-}
 
 var configPath = flag.String(
 	"config",
@@ -30,59 +24,87 @@ var configPath = flag.String(
 	"Path to config file",
 )
 
-func run(ctx context.Context, bot *Bot) {
-
-	botAPI, err := tgbotapi.NewBotAPI(bot.Config.BotKey)
-	if err != nil {
-		bot.Logger.Error("bot init failed", "error", err)
-		return
-	}
-	slog.Debug("botApi inited")
-
-	handler := app.BuildHandler(botAPI, &app.App{
-		Config: bot.Config,
-		Logger: bot.Logger,
-		DB:     bot.DB,
-	})
-
-	handler.Start(ctx)
-}
-
 func main() {
-	fmt.Println("Expense Bot initializing...")
-
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		panic(err)
 	}
+	slog.Info("Config loaded")
 
-	logFile, err := logger.Init(cfg.LogFile, cfg.IsDebug)
+	err = logger.New(cfg)
 	if err != nil {
 		panic(err)
 	}
-	defer logFile.Close()
+	slog.Info("Logger inited")
 
 	dbPool := db.NewPostgres(cfg.Database.URL)
 	slog.Info("dbPool inited")
 	defer dbPool.Close()
 	defer slog.Info("dbPool closed")
 
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
-		os.Interrupt,
-		syscall.SIGTERM,
-	)
-	defer stop()
-
-	bot := &Bot{
+	application := &app.App{
 		Config: cfg,
-		Logger: slog.Default(),
 		DB:     dbPool,
+		Logger: slog.Default(),
 	}
 
-	run(ctx, bot)
+	svcConfig := &service.Config{
+		Name:        "ExpenseBot",
+		DisplayName: "Expense Bot",
+		Description: "Telegram Expense Bot",
+	}
+
+	program := &servicehost.Program{
+		App: application,
+	}
+
+	isService, err := svc.IsWindowsService()
+	if err != nil {
+		slog.Error("failed to detect service mode: ", "Error", err)
+		return
+	}
+
+	svc, err := service.New(program, svcConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	if len(flag.Args()) > 0 {
+		err = nil
+		switch flag.Args()[0] {
+
+		case "install":
+			err = svc.Install()
+
+		case "uninstall":
+			err = svc.Uninstall()
+		}
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	if !isService {
+
+		ctx, stop := signal.NotifyContext(
+			context.Background(),
+			os.Interrupt,
+			syscall.SIGTERM,
+		)
+		defer stop()
+
+		application.Run(ctx)
+
+		return
+	}
+
+	err = svc.Run()
+	if err != nil {
+		panic(err)
+	}
 
 	slog.Info("Bot closed")
 }
