@@ -43,15 +43,12 @@ func New(cfg *config.AppConfig) error {
 	}
 
 	if cfg.LogConfig.File {
-		// 1. Получаем абсолютный путь к запущенному .exe файлу службы
 		exePath, err := os.Executable()
 		if err != nil {
 			log.Fatalf("Failed to get executable path: %v", err)
 		}
 
-		// 2. Выделяем папку, в которой лежит этот .exe
 		exeDir := filepath.Dir(exePath)
-		// logDir, err := os.Getwd()
 		logDir := filepath.Join(exeDir, cfg.LogConfig.Folder)
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			return fmt.Errorf("create log directory: %w", err)
