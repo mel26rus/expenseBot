@@ -2,9 +2,9 @@ package logger
 
 import (
 	"expense-bot/internal/config"
+	"expense-bot/internal/filesystem"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -43,13 +43,12 @@ func New(cfg *config.AppConfig) error {
 	}
 
 	if cfg.LogConfig.File {
-		exePath, err := os.Executable()
-		if err != nil {
-			log.Fatalf("Failed to get executable path: %v", err)
-		}
 
-		exeDir := filepath.Dir(exePath)
-		logDir := filepath.Join(exeDir, cfg.LogConfig.Folder)
+		logDir := filepath.Join(
+			filesystem.BaseDir("config.yaml"),
+			cfg.LogConfig.Folder,
+		)
+
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			return fmt.Errorf("create log directory: %w", err)
 		}

@@ -50,6 +50,7 @@ func (h *Handler) Start(ctx context.Context) {
 }
 
 func (h *Handler) handleMessage(msg *tgbotapi.Message) {
+	const fn_name = "Handler.handleMessage"
 
 	response, err := h.flow.HandleMessage(
 		context.Background(),
@@ -57,10 +58,10 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		msg.Text,
 	)
 	if err != nil {
-		slog.Error("MainFlow.handleMessage error", "error", err)
+		slog.Error(fn_name, "error", err)
 		response.Text = fmt.Sprintf("h.handleMessage Ошибка: %v", err)
 	}
-	slog.Debug("MainFlow.handleMessage success", "response.text", response.Text, "response.editmessageid", response.EditMessageId)
+	slog.Debug(fn_name, "response.text", response.Text, "response.editmessageid", response.EditMessageId)
 
 	if response.EditMessageId != 0 && !response.IsSendMenuMessage {
 		editMessage := tgbotapi.NewEditMessageText(msg.Chat.ID, int(response.EditMessageId), response.Text)
@@ -71,7 +72,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		editMessage.ParseMode = "HTML"
 		_, err := h.bot.Send(editMessage)
 		if err != nil {
-			slog.Error("MainFlow.handleMessage error_1", "error", err)
+			slog.Error(fn_name+" error_1", "error", err)
 		}
 
 	} else {
@@ -83,15 +84,26 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		editMessage.ParseMode = "HTML"
 		sendedMessage, err := h.bot.Send(editMessage)
 		if err != nil {
-			slog.Error("MainFlow.handleMessage error_2", "error", err)
+			slog.Error(fn_name+" error_2", "error", err)
+			newMessage := tgbotapi.NewMessage(msg.Chat.ID, response.Text)
+			if response.Keyboard != nil && !response.IsSendMenuMessage {
+				h.appendCancelButton(response.Keyboard)
+				editMessage.ReplyMarkup = response.Keyboard
+			}
+			editMessage.ParseMode = "HTML"
+			sendedMessage, err = h.bot.Send(newMessage)
+			if err != nil {
+				slog.Error(fn_name+" error_2_1", "error", err)
+			}
 		}
-		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, int64(sendedMessage.MessageID))
+		slog.Debug("SendedMessage", "sendedMessageId", sendedMessage.MessageID)
+		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, msg.Chat.ID)
 	}
-	slog.Debug("MainFlow.handleMessage deleting message", "msg.Chat.ID", msg.Chat.ID, "msg.MessageID", msg.MessageID)
+	slog.Debug(fn_name+" deleting message", "msg.Chat.ID", msg.Chat.ID, "msg.MessageID", msg.MessageID)
 	delmsg := tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID)
 	_, err = h.bot.Request(delmsg)
 	if err != nil {
-		slog.Error("MainFlow.handleMessage failed to delete message", "error", err)
+		slog.Error(fn_name+" failed to delete message", "error", err)
 	}
 
 	slog.Debug("response.IsSendMenuMessage", "value", response.IsSendMenuMessage)
@@ -102,17 +114,17 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		menuMessagee.ParseMode = "HTML"
 		sendedMessage, err := h.bot.Send(menuMessagee)
 		if err != nil {
-			slog.Error("MainFlow.handleMessage error_2", "error", err)
+			slog.Error(fn_name+" error_3", "error", err)
 		}
 		slog.Debug("handlemessage", "response.IsSendMenuMessage", res.IsSendMenuMessage, "sendedMessage.MessageID", sendedMessage.MessageID)
-		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, int64(sendedMessage.MessageID))
+		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, msg.Chat.ID)
 	}
 
 }
 
 func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 
-	slog.Debug("Handle callback", "userTgId", cb.From.ID, "callback data", cb.Data)
+	slog.Debug("Handle callback", "userTgId", cb.From.ID, "callback data", cb.Data, "callback cb.Message.Chat.ID", cb.Message.Chat.ID)
 
 	response, err := h.flow.HandleCallback(
 		context.Background(),
@@ -124,7 +136,7 @@ func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 		response.Text = fmt.Sprintf("h.handleCallback Ошибка: %v", err)
 	}
 	slog.Debug("flow handle callback success", "response.text", response.Text, " cb.Message.MessageID", cb.Message.MessageID, "response.keyboard", response.Keyboard)
-	h.flow.SetUserSessionMessageId(context.Background(), cb.From.ID, int64(cb.Message.MessageID))
+	h.flow.SetUserSessionMessageId(context.Background(), cb.From.ID, cb.Message.Chat.ID)
 	msg := tgbotapi.NewEditMessageText(cb.Message.Chat.ID, cb.Message.MessageID, response.Text)
 
 	if response.Keyboard != nil && !response.IsSendMenuMessage {
@@ -146,10 +158,10 @@ func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 		menuMessagee.ParseMode = "HTML"
 		sendedMessage, err := h.bot.Send(menuMessagee)
 		if err != nil {
-			slog.Error("MainFlow.handleMessage error_2", "error", err)
+			slog.Error("MainFlow.handleMessage error_4", "error", err)
 		}
 		slog.Debug("handlecallback response.IsSendMenuMessage = true", "sendedMessage.MessageID", sendedMessage.MessageID)
-		h.flow.SetUserSessionMessageId(context.Background(), cb.Message.Chat.ID, int64(sendedMessage.MessageID))
+		h.flow.SetUserSessionMessageId(context.Background(), cb.Message.Chat.ID, cb.Message.From.ID)
 	}
 
 }

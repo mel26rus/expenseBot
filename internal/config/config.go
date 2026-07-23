@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"expense-bot/internal/filesystem"
 	"os"
 	"path/filepath"
 
@@ -30,18 +30,10 @@ const constConfigFileName = "config.yaml"
 const DefaultDatabaseURL = "postgres://postgres:root@localhost:5432/expense_db"
 
 func getConfigFile() string {
-	// 1. Получаем абсолютный путь к запущенному .exe файлу службы
-	exePath, err := os.Executable()
-	if err != nil {
-		log.Fatalf("Failed to get executable path: %v", err)
-	}
-
-	// 2. Выделяем папку, в которой лежит этот .exe
-	exeDir := filepath.Dir(exePath)
-	if err != nil {
-		return "."
-	}
-	return filepath.Join(exeDir, constConfigFileName)
+	return filepath.Join(
+		filesystem.BaseDir(constConfigFileName),
+		constConfigFileName,
+	)
 }
 
 func defaultConfig() *AppConfig {

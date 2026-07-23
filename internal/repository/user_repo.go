@@ -56,3 +56,52 @@ func (r *UserRepo) ChangeMonthlyReportConfig(ctx context.Context, id int64) (mod
 
 	return userSettings, err
 }
+
+const newSqlForGoC = `
+WITH ins AS (
+    INSERT INTO users (
+        telegram_id,
+        chat_id
+    )
+    VALUES (
+        $1,
+    DO NOTHING
+    RETURNING
+        id,
+        telegram_id,
+        chat_id
+),
+upd AS (
+    UPDATE users
+    SET chat_id = $2
+    WHERE telegram_id = $1
+      AND chat_id IS DISTINCT FROM $2
+    RETURNING
+        id,
+        telegram_id,
+        chat_id
+)
+SELECT
+    id,
+    telegram_id,
+    chat_id
+FROM ins
+
+UNION ALL
+
+SELECT
+    id,
+    telegram_id,
+    chat_id
+FROM upd
+
+UNION ALL
+
+SELECT
+    id,
+    telegram_id,
+    chat_id
+FROM users
+WHERE telegram_id = $1
+LIMIT 1;
+`

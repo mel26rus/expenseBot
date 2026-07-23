@@ -15,6 +15,7 @@ import (
 	"expense-bot/internal/config"
 	"expense-bot/internal/db"
 	"expense-bot/internal/logger"
+	"expense-bot/internal/scheduler"
 	"expense-bot/internal/servicehost"
 )
 
@@ -31,7 +32,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	slog.Info("Config loaded")
+	//slog.Info("Config loaded")
 
 	err = logger.New(cfg)
 	if err != nil {
@@ -44,10 +45,20 @@ func main() {
 	defer dbPool.Close()
 	defer slog.Info("dbPool closed")
 
+	sch := scheduler.New()
+
+	sch.Add(
+		scheduler.NewHourlyLogJob(),
+	)
+	sch.Add(
+		scheduler.NewDailyReportJob(),
+	)
+
 	application := &app.App{
-		Config: cfg,
-		DB:     dbPool,
-		Logger: slog.Default(),
+		Config:    cfg,
+		DB:        dbPool,
+		Logger:    slog.Default(),
+		Scheduler: sch,
 	}
 
 	svcConfig := &service.Config{
