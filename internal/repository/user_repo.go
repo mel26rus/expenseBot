@@ -65,6 +65,9 @@ WITH ins AS (
     )
     VALUES (
         $1,
+        $2
+    )
+    ON CONFLICT (telegram_id)
     DO NOTHING
     RETURNING
         id,
