@@ -47,7 +47,7 @@ func (f *TransactionFlow) Start(ctx context.Context, session model.Session, amou
 	// slog.Debug("Starting transaction flow", "userID", session.UserID, "amount", amount, "accountsdata",)
 
 	return Response{
-		Text:          fmt.Sprintf("Сумма: %s \nВыберите счет:", formatAmount(amount)),
+		Text:          fmt.Sprintf("Сумма: %s \nВыберите счет:", FormatAmount(amount)),
 		Keyboard:      buildUserAccountsInline(accs),
 		EditMessageId: session.EditMessageId,
 	}, nil
@@ -155,7 +155,7 @@ func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Sess
 		slog.Debug("TransactionFlow.HandleCallback: StateWaitingType", "userId", session.UserID, "data", data)
 
 		return Response{
-			Text:          fmt.Sprintf("Сумма: %s \n Счет: %s \n Выберите тип операции:", formatAmount(payload.Amount), accountTitle),
+			Text:          fmt.Sprintf("Сумма: %s \n Счет: %s \n Выберите тип операции:", FormatAmount(payload.Amount), accountTitle),
 			Keyboard:      buildTypeInline(),
 			EditMessageId: session.EditMessageId,
 		}, nil
@@ -195,7 +195,7 @@ func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Sess
 		f.sessionService.Set(ctx, session.UserID, userstate.StateWaitingComment, payload)
 
 		return Response{
-			Text:          fmt.Sprintf("Сумма: %s \n Счет: %s \n Тип операции: %s \n Выберите или напишите комментарий:", formatAmount(payload.Amount), accountTitle, txType),
+			Text:          fmt.Sprintf("Сумма: %s \n Счет: %s \n Тип операции: %s \n Выберите или напишите комментарий:", FormatAmount(payload.Amount), accountTitle, txType),
 			Keyboard:      buildCommentInline(comments),
 			EditMessageId: session.EditMessageId,
 		}, nil
@@ -227,7 +227,7 @@ func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Sess
 			f.sessionService.Set(ctx, session.UserID, userstate.StateWaitingTransferAmountTo, payload)
 			return Response{
 				Text: fmt.Sprintf("Перевод.\nСумма списания со счета %s: %s\nСчет пополнения:%s\nВведите сумму пополнения в валюте счета: ",
-					accountTitle, formatAmount(payload.Amount), accountToTitle),
+					accountTitle, FormatAmount(payload.Amount), accountToTitle),
 				EditMessageId: session.EditMessageId,
 				Keyboard:      nil,
 			}, nil

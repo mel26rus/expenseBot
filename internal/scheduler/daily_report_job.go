@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"expense-bot/internal/reportformatter"
 	"expense-bot/internal/service"
 	"log/slog"
 	"time"
@@ -25,30 +26,31 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	return now.Add(time.Hour)
+	return now.Add(time.Minute)
 }
 
 func (j *DailyReportJob) Run(ctx context.Context) error {
 
-	users, _ := j.reportService.GetUsersHasTransactionsDaily(ctx)
+	users, _ := j.reportService.GetUsersForDailyReport(ctx)
 
 	for _, userID := range users {
 
-		report, _ := j.reportService.BuildDailyReport(
+		report, err := j.reportService.BuildDailyReport(
 			ctx,
 			userID,
-			start,
-			end,
 		)
+		if err != nil {
+			slog.Error("reportService.BuildDailyReport", "Error", err)
+		}
 
-		text := BuildDailyReportText(report)
+		text := reportformatter.BuildDailyReportText(report)
 
-		msg := tgbotapi.NewMessage(report.TgUserID, text)
+		msg := tgbotapi.NewMessage(userID, text)
 		msg.ParseMode = tgbotapi.ModeHTML
 
-		err := j.bot.Send(msg)
+		_, err = j.bot.Send(msg)
 		if err != nil {
-			return err
+			slog.Error("Daily report run", "Error", err)
 		}
 	}
 
