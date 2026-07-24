@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 )
 
 func BuildDailyReportText(report []*model.AccountReport) string {
@@ -14,7 +15,7 @@ func BuildDailyReportText(report []*model.AccountReport) string {
 
 	sb.WriteString(
 		fmt.Sprintf(
-			"📅 <b>Отчет за %s</b>\n\n",
+			"📅 <b>Отчет за %s</b>\n",
 			time.Now().AddDate(0, 0, -1).Format("02.01.2006"),
 		),
 	)
@@ -30,7 +31,7 @@ func BuildDailyReportText(report []*model.AccountReport) string {
 
 		sb.WriteString(
 			fmt.Sprintf(
-				"💰 Баланс: <code>%s</code>\n\n",
+				"💰 Баланс: <code>%s</code>\n",
 				flow.FormatAmount(account.Balance),
 			),
 		)
@@ -58,21 +59,23 @@ func BuildDailyReportText(report []*model.AccountReport) string {
 			} else {
 
 				if !hasExpense {
-					sb.WriteString("\n📉 <b>Расходы</b>\n")
+					sb.WriteString("📉 <b>Расходы</b>\n")
 					hasExpense = true
 				}
 
+				text := fmt.Sprintf(
+					"• %-18s <b>%s</b>\n",
+					emoji(tx.Category)+capitalize(tx.Category),
+					flow.FormatAmount(-tx.Amount),
+				)
+
 				sb.WriteString(
-					fmt.Sprintf(
-						"• %-18s <b>%s</b>\n",
-						emoji(tx.Category)+capitalize(tx.Category),
-						flow.FormatAmount(-tx.Amount),
-					),
+					text,
 				)
 			}
 		}
 
-		sb.WriteString("\n")
+		//	sb.WriteString("\n")
 
 		if account.Income > 0 {
 
@@ -101,12 +104,14 @@ func BuildDailyReportText(report []*model.AccountReport) string {
 }
 
 func capitalize(s string) string {
-
 	if s == "" {
 		return s
 	}
 
-	return strings.ToUpper(s[:1]) + s[1:]
+	r := []rune(s)
+	r[0] = unicode.ToUpper(r[0])
+
+	return fmt.Sprintf("%s", string(r))
 }
 
 func emoji(category string) string {

@@ -72,7 +72,15 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		editMessage.ParseMode = "HTML"
 		_, err := h.bot.Send(editMessage)
 		if err != nil {
-			slog.Error(fn_name+" error_1", "error", err)
+			slog.Error(fmt.Sprintf("%s error_1", fn_name), "error", err)
+			newMessage := tgbotapi.NewMessage(editMessage.ChatID, editMessage.Text)
+			if editMessage.ReplyMarkup != nil {
+				newMessage.ReplyMarkup = editMessage.ReplyMarkup
+			}
+			_, err = h.bot.Send(newMessage)
+			if err != nil {
+				slog.Error(fmt.Sprintf("%s error_1_1", fn_name), "Error", err)
+			}
 		}
 
 	} else {
@@ -81,16 +89,15 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 			h.appendCancelButton(response.Keyboard)
 			editMessage.ReplyMarkup = response.Keyboard
 		}
-		editMessage.ParseMode = "HTML"
+		editMessage.ParseMode = tgbotapi.ModeHTML
 		sendedMessage, err := h.bot.Send(editMessage)
 		if err != nil {
 			slog.Error(fn_name+" error_2", "error", err)
 			newMessage := tgbotapi.NewMessage(msg.Chat.ID, response.Text)
-			if response.Keyboard != nil && !response.IsSendMenuMessage {
-				h.appendCancelButton(response.Keyboard)
-				editMessage.ReplyMarkup = response.Keyboard
+			if editMessage.ReplyMarkup != nil {
+				newMessage.ReplyMarkup = editMessage.ReplyMarkup
 			}
-			editMessage.ParseMode = "HTML"
+			editMessage.ParseMode = tgbotapi.ModeHTML
 			sendedMessage, err = h.bot.Send(newMessage)
 			if err != nil {
 				slog.Error(fn_name+" error_2_1", "error", err)

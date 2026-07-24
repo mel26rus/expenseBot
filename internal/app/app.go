@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"expense-bot/internal/bot"
 	"expense-bot/internal/config"
 	"expense-bot/internal/scheduler"
 
@@ -16,22 +17,18 @@ type App struct {
 	Logger    *slog.Logger
 	DB        *pgxpool.Pool
 	Scheduler *scheduler.Scheduler
+	botAPI    *tgbotapi.BotAPI
+	handler   *bot.Handler
 }
 
+// тут всё запускаем впринципе оно и так есть
 func (a *App) Run(ctx context.Context) {
 	a.Logger.Debug("+App.run")
-	botAPI, err := tgbotapi.NewBotAPI(a.Config.BotKey)
-	if err != nil {
-		a.Logger.Error("bot init failed", "error", err)
-		return
-	}
-	slog.Debug("botApi inited")
 	go a.Scheduler.Run(ctx)
-	slog.Debug("Scheduler started")
+	slog.Info("Scheduler started")
 
-	handler := BuildHandler(botAPI, a)
-	a.Logger.Debug("+handler.Start(ctx)")
-	handler.Start(ctx)
-	a.Logger.Debug("-handler.Start(ctx)")
+	a.Logger.Info("+handler.Start(ctx)")
+	a.handler.Start(ctx)
+	a.Logger.Info("-handler.Start(ctx)")
 	a.Logger.Debug("-App.run")
 }

@@ -4,28 +4,39 @@ import (
 	"expense-bot/internal/bot"
 	"expense-bot/internal/flow"
 	"expense-bot/internal/repository"
+	"expense-bot/internal/scheduler"
 	"expense-bot/internal/service"
 	"log/slog"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func BuildHandler(botAPI *tgbotapi.BotAPI, app *App) *bot.Handler {
-	slog.Debug("Building bot handler")
-	// repos
-	userRepo := repository.NewUserRepo(app.DB)
-	accountRepo := repository.NewAccountRepo(app.DB)
-	sessionRepo := repository.NewSessionRepo(app.DB)
-	currencyRepo := repository.NewCurrencyRepo(app.DB)
-	transactionRepo := repository.NewTransactionRepo(app.DB)
+func (a *App) Boot() {
+	slog.Info("Booting application")
 
+	var err error
+	a.botAPI, err = tgbotapi.NewBotAPI(a.Config.BotKey)
+	if err != nil {
+		a.Logger.Error("bot init failed", "error", err)
+		return
+	}
+	slog.Info("botApi inited")
+	// repos
+	userRepo := repository.NewUserRepo(a.DB)
+	accountRepo := repository.NewAccountRepo(a.DB)
+	sessionRepo := repository.NewSessionRepo(a.DB)
+	currencyRepo := repository.NewCurrencyRepo(a.DB)
+	transactionRepo := repository.NewTransactionRepo(a.DB)
+	reportRepo := repository.NewReportRepo(a.DB)
+	slog.Info("Rpositories inited")
 	// services
 	userService := service.NewUserService(userRepo)
 	accountService := service.NewAccountService(accountRepo)
 	sessionService := service.NewSessionService(sessionRepo)
 	currencyService := service.NewCurrencyService(currencyRepo)
 	transactionService := service.NewTransactionService(transactionRepo)
-
+	reportService := service.NewReportService(reportRepo)
+	slog.Info("Services inited")
 	// flow
 
 	accountFlow := flow.NewAccountFlow(
@@ -48,8 +59,20 @@ func BuildHandler(botAPI *tgbotapi.BotAPI, app *App) *bot.Handler {
 		transactionFlow,
 		flow.NewMenuFlow(userService),
 	)
+	slog.Info("Flows inited")
 
-	// handler
-	slog.Debug("Bot handler built")
-	return bot.NewHandler(botAPI, mainFlow)
+	a.handler = bot.NewHandler(a.botAPI, mainFlow)
+
+	sch := scheduler.New()
+
+	sch.Add(
+		scheduler.NewHourlyLogJob(),
+	)
+	sch.Add(
+		scheduler.NewDailyReportJob(a.botAPI, reportService),
+	)
+
+	a.Scheduler = sch
+
+	slog.Info("Boot aplication inited")
 }

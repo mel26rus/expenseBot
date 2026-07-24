@@ -31,7 +31,7 @@ func (s *Scheduler) Add(job Job) {
 
 func (s *Scheduler) Run(ctx context.Context) {
 
-	slog.Info("Scheduler started")
+	slog.Debug("Scheduler Run")
 
 	for {
 

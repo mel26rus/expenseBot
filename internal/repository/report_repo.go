@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"expense-bot/internal/model"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,7 +19,7 @@ func NewReportRepo(db *pgxpool.Pool) *ReportRepo {
 
 func (r *ReportRepo) GetAccountTransactions(
 	ctx context.Context,
-	UserID int64,
+	tgId int64,
 	DateStart time.Time,
 	DateEnd time.Time,
 ) ([]*model.TransactionsReport, error) {
@@ -30,8 +31,8 @@ func (r *ReportRepo) GetAccountTransactions(
 			SUM(t.amount) AS amount
 
 		FROM transactions t
-
-		WHERE t.user_id = $1
+		join users u on u.id = t.user_id 
+		WHERE u.telegram_id = $1
 		AND t.created_at >= $2
 		AND t.created_at <  $3
 
@@ -43,7 +44,7 @@ func (r *ReportRepo) GetAccountTransactions(
 			t.account_id,
 			amount;
 	`,
-		UserID,
+		tgId,
 		DateStart,
 		DateEnd,
 	)
@@ -56,6 +57,7 @@ func (r *ReportRepo) GetAccountTransactions(
 	for rows.Next() {
 		var tr model.TransactionsReport
 		err := rows.Scan(&tr.AccountId, &tr.Category, &tr.Amount)
+		slog.Debug("Category", "cat", tr.Category)
 		if err != nil {
 			return nil, err
 		}
@@ -67,42 +69,47 @@ func (r *ReportRepo) GetAccountTransactions(
 
 func (r *ReportRepo) GetUserAccounts(
 	ctx context.Context,
-	UserId int64,
+	tgId int64,
 	StartDate time.Time,
 	EndDate time.Time,
 ) ([]*model.AccountReport, error) {
 
 	rows, err := r.db.Query(ctx, `
-			select
-				a.id,
-				a.name || ' (' || UPPER(c.code) || ')' as title,
-				SUM(t.amount) as balance,
-				coalesce(SUM(t.amount)
-					filter (
-						where t.created_at >= $2
-						and t.created_at < $3
-						and t.amount > 0
-					), 0) as income,
-				coalesce(ABS(SUM(t.amount)
-					filter (
-						where t.created_at >= $2
-						and t.created_at < $3
-						and t.amount < 0
-					)), 0) as expense
-			from
-				accounts a
-			join currencies c on c.id = a.currency_id
-			left join transactions t on t.account_id = a.id
-			where
-				a.user_id = $1
-			group by
-				a.id,
-				a.name,
-				c.code
-			order by
-				a.id;
+		select
+			a.id,
+			a.name || ' (' || UPPER(c.code) || ')' as title,
+			tb.balance,
+			coalesce(SUM(t.amount)
+				filter (
+					where t.created_at >= $2
+					and t.created_at < $3
+					and t.amount > 0
+				), 0) as income,
+			coalesce(ABS(SUM(t.amount)
+				filter (
+					where t.created_at >= $2
+					and t.created_at < $3
+					and t.amount < 0
+				)), 0) as expense
+		from users u
+		join accounts a on u.id = a.user_id 
+		join currencies c on c.id = a.currency_id
+		join transactions t on t.account_id = a.id
+		join (  select t.account_id, t.user_id, sum(t.amount) as balance 
+				from transactions t 
+				group by t.account_id, t.user_id) tb on tb.account_id = t.account_id and t.user_id = u.id
+		where t.created_at >= $2
+			and t.created_at < $3
+			and u.telegram_id = $1
+		group by
+			a.id,
+			a.name,
+			c.code,
+			tb.balance
+		order by
+			a.id;
 	`,
-		UserId,
+		tgId,
 		StartDate,
 		EndDate,
 	)
@@ -127,14 +134,14 @@ func (r *ReportRepo) GetUserAccounts(
 func (r *ReportRepo) GetUsersHasTransactionsDaily(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT DISTINCT
-			t.user_id
+			u.telegram_id 
 		FROM transactions t
 		JOIN users u ON u.id = t.user_id
 		WHERE
 			u.isdailyreport = TRUE
 			AND t.created_at >= $1
 			AND t.created_at < $2
-		ORDER BY t.user_id
+		ORDER BY u.telegram_id
 	`,
 		StartDate,
 		EndDate,

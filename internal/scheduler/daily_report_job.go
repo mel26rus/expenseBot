@@ -11,13 +11,15 @@ import (
 )
 
 type DailyReportJob struct {
-	logger        *slog.Logger
 	bot           *tgbotapi.BotAPI
 	reportService *service.ReportService
 }
 
-func NewDailyReportJob() *DailyReportJob {
-	return &DailyReportJob{}
+func NewDailyReportJob(bot *tgbotapi.BotAPI, reportService *service.ReportService) *DailyReportJob {
+	return &DailyReportJob{
+		bot:           bot,
+		reportService: reportService,
+	}
 }
 
 func (j *DailyReportJob) Name() string {
@@ -26,26 +28,27 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	return now.Add(time.Minute)
+	return now.Add(time.Hour)
 }
 
 func (j *DailyReportJob) Run(ctx context.Context) error {
-
+	slog.Debug("DailyReportJob.Run")
 	users, _ := j.reportService.GetUsersForDailyReport(ctx)
 
-	for _, userID := range users {
+	for _, userTGID := range users {
 
 		report, err := j.reportService.BuildDailyReport(
 			ctx,
-			userID,
+			userTGID,
 		)
 		if err != nil {
 			slog.Error("reportService.BuildDailyReport", "Error", err)
 		}
 
 		text := reportformatter.BuildDailyReportText(report)
-
-		msg := tgbotapi.NewMessage(userID, text)
+		slog.Debug("Report", "userTGID", userTGID)
+		slog.Debug("Report", "text", text)
+		msg := tgbotapi.NewMessage(userTGID, text)
 		msg.ParseMode = tgbotapi.ModeHTML
 
 		_, err = j.bot.Send(msg)
