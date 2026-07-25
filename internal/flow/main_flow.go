@@ -14,6 +14,7 @@ type MainFlow struct {
 	accountFlow     *AccountFlow
 	transactionFlow *TransactionFlow
 	MenuFlow        *MenuFlow
+	ReportFlow      *ReportFlow
 }
 
 type Response struct {
@@ -28,12 +29,14 @@ func NewMainFlow(
 	account *AccountFlow,
 	tx *TransactionFlow,
 	menuFlow *MenuFlow,
+	reportFlow *ReportFlow,
 ) *MainFlow {
 	return &MainFlow{
 		sessionService:  session,
 		accountFlow:     account,
 		transactionFlow: tx,
 		MenuFlow:        menuFlow,
+		ReportFlow:      reportFlow,
 	}
 }
 
@@ -81,6 +84,11 @@ func (f *MainFlow) HandleCallback(ctx context.Context, tgUserID int64, data stri
 		return res, err
 	}
 	return f.accountFlow.HandleCallback(ctx, session, data)
+}
+
+func (f *MainFlow) HandleDailyReports(ctx context.Context) ([]Response, error) {
+
+	return nil, nil
 }
 
 // да да мне не нравится что тут tgUserID, но пока так, потом можно будет юзера по id доставать и юзать его tgId там, а не передавать его везде

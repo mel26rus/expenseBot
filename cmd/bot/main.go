@@ -43,13 +43,17 @@ func main() {
 	defer dbPool.Close()
 	defer slog.Info("dbPool closed")
 
+	isService, err := svc.IsWindowsService()
+	if err != nil {
+		slog.Error("failed to detect service mode: ", "Error", err)
+		return
+	}
+
 	application := &app.App{
 		Config: cfg,
 		DB:     dbPool,
 		Logger: slog.Default(),
 	}
-
-	application.Boot()
 
 	svcConfig := &service.Config{
 		Name:        "ExpenseBot",
@@ -59,12 +63,6 @@ func main() {
 
 	program := &servicehost.Program{
 		App: application,
-	}
-
-	isService, err := svc.IsWindowsService()
-	if err != nil {
-		slog.Error("failed to detect service mode: ", "Error", err)
-		return
 	}
 
 	svc, err := service.New(program, svcConfig)
@@ -88,17 +86,16 @@ func main() {
 		return
 	}
 
-	if !isService {
+	application.Boot()
 
+	if !isService {
 		ctx, stop := signal.NotifyContext(
 			context.Background(),
 			os.Interrupt,
 			syscall.SIGTERM,
 		)
 		defer stop()
-
 		application.Run(ctx)
-
 		return
 	}
 

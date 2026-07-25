@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"expense-bot/internal/model"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -57,7 +56,6 @@ func (r *ReportRepo) GetAccountTransactions(
 	for rows.Next() {
 		var tr model.TransactionsReport
 		err := rows.Scan(&tr.AccountId, &tr.Category, &tr.Amount)
-		slog.Debug("Category", "cat", tr.Category)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +129,7 @@ func (r *ReportRepo) GetUserAccounts(
 	return accounts, nil
 }
 
-func (r *ReportRepo) GetUsersHasTransactionsDaily(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
+func (r *ReportRepo) GetUsersHasTransactions(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT DISTINCT
 			u.telegram_id 

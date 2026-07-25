@@ -58,10 +58,12 @@ func (a *App) Boot() {
 		accountFlow,
 		transactionFlow,
 		flow.NewMenuFlow(userService),
+		flow.NewReportFlow(reportService, sessionService, userService),
 	)
 	slog.Info("Flows inited")
 
 	a.handler = bot.NewHandler(a.botAPI, mainFlow)
+	reportHandler := bot.NewHandler(a.botAPI, mainFlow)
 
 	sch := scheduler.New()
 
@@ -69,10 +71,10 @@ func (a *App) Boot() {
 		scheduler.NewHourlyLogJob(),
 	)
 	sch.Add(
-		scheduler.NewDailyReportJob(a.botAPI, reportService),
+		scheduler.NewDailyReportJob(reportHandler),
 	)
 
 	a.Scheduler = sch
 
-	slog.Info("Boot aplication inited")
+	slog.Info("Boot aplication completed")
 }

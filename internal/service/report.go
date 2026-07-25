@@ -15,9 +15,9 @@ func NewReportService(r *repository.ReportRepo) *ReportService {
 	return &ReportService{repo: r}
 }
 
-func (r *ReportService) GetUsersForDailyReport(ctx context.Context) ([]int64, error) {
-	start, end := dateutil.Today()
-	users, err := r.repo.GetUsersHasTransactionsDaily(ctx, start, end)
+func (r *ReportService) GetUsersIDYesterdayReport(ctx context.Context) ([]int64, error) {
+	start, end := dateutil.Yesterday()
+	users, err := r.repo.GetUsersHasTransactions(ctx, start, end)
 	return users, err
 }
 
@@ -26,7 +26,7 @@ func (s *ReportService) BuildDailyReport(
 	tgID int64,
 ) ([]*model.AccountReport, error) {
 
-	start, end := dateutil.Today()
+	start, end := dateutil.Yesterday()
 
 	accounts, err := s.repo.GetUserAccounts(ctx, tgID, start, end)
 	if err != nil {

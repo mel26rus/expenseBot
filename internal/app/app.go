@@ -23,6 +23,7 @@ type App struct {
 
 // тут всё запускаем впринципе оно и так есть
 func (a *App) Run(ctx context.Context) {
+
 	a.Logger.Debug("+App.run")
 	go a.Scheduler.Run(ctx)
 	slog.Info("Scheduler started")

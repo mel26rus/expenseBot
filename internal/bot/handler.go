@@ -104,7 +104,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 			}
 		}
 		slog.Debug("SendedMessage", "sendedMessageId", sendedMessage.MessageID)
-		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, msg.Chat.ID)
+		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, int64(sendedMessage.MessageID))
 	}
 	slog.Debug(fn_name+" deleting message", "msg.Chat.ID", msg.Chat.ID, "msg.MessageID", msg.MessageID)
 	delmsg := tgbotapi.NewDeleteMessage(msg.Chat.ID, msg.MessageID)
@@ -143,7 +143,7 @@ func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 		response.Text = fmt.Sprintf("h.handleCallback Ошибка: %v", err)
 	}
 	slog.Debug("flow handle callback success", "response.text", response.Text, " cb.Message.MessageID", cb.Message.MessageID, "response.keyboard", response.Keyboard)
-	h.flow.SetUserSessionMessageId(context.Background(), cb.From.ID, cb.Message.Chat.ID)
+	h.flow.SetUserSessionMessageId(context.Background(), cb.From.ID, int64(cb.Message.MessageID))
 	msg := tgbotapi.NewEditMessageText(cb.Message.Chat.ID, cb.Message.MessageID, response.Text)
 
 	if response.Keyboard != nil && !response.IsSendMenuMessage {
@@ -168,9 +168,42 @@ func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 			slog.Error("MainFlow.handleMessage error_4", "error", err)
 		}
 		slog.Debug("handlecallback response.IsSendMenuMessage = true", "sendedMessage.MessageID", sendedMessage.MessageID)
-		h.flow.SetUserSessionMessageId(context.Background(), cb.Message.Chat.ID, cb.Message.From.ID)
+		h.flow.SetUserSessionMessageId(context.Background(), cb.Message.Chat.ID, int64(sendedMessage.MessageID))
 	}
 
+}
+
+func (h *Handler) HandleDailyReports(ctx context.Context) {
+	usersIDs, err := h.flow.ReportFlow.GetYesterdayTxUserIDs(ctx)
+	if err != nil {
+		slog.Error("HandleDailyReports", "Error", err)
+	}
+
+	for _, userID := range usersIDs {
+		var res flow.Response
+		var userTgId int64
+		res, userTgId, err = h.flow.ReportFlow.BuildUserDailyReport(ctx, userID)
+
+		editMessage := tgbotapi.NewEditMessageText(userTgId, int(res.EditMessageId), res.Text)
+		editMessage.ParseMode = tgbotapi.ModeHTML
+		_, err = h.bot.Send(editMessage)
+		if err != nil {
+			slog.Error("HandleDailyReports.Send", "Error", err)
+		}
+		if res.IsSendMenuMessage {
+			res, _ := h.flow.GenerateFirstMessage()
+			menuMessage := tgbotapi.NewMessage(userTgId, res.Text)
+			menuMessage.ReplyMarkup = res.Keyboard
+			menuMessage.ParseMode = tgbotapi.ModeHTML
+			sendedMessage, err := h.bot.Send(menuMessage)
+			if err != nil {
+				slog.Error("MainFlow.handleMessage error_4", "error", err)
+			}
+			slog.Debug("HandleDailyReports end", "response.IsSendMenuMessage", res.IsSendMenuMessage, "sendedMessage.MessageID", sendedMessage.MessageID)
+			h.flow.SetUserSessionMessageId(context.Background(), userTgId, int64(sendedMessage.MessageID))
+		}
+
+	}
 }
 
 func (h *Handler) appendCancelButton(keyboard *tgbotapi.InlineKeyboardMarkup) {

@@ -2,23 +2,19 @@ package scheduler
 
 import (
 	"context"
-	"expense-bot/internal/reportformatter"
-	"expense-bot/internal/service"
+	"expense-bot/internal/bot"
+	"fmt"
 	"log/slog"
 	"time"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type DailyReportJob struct {
-	bot           *tgbotapi.BotAPI
-	reportService *service.ReportService
+	Handler *bot.Handler
 }
 
-func NewDailyReportJob(bot *tgbotapi.BotAPI, reportService *service.ReportService) *DailyReportJob {
+func NewDailyReportJob(handler *bot.Handler) *DailyReportJob {
 	return &DailyReportJob{
-		bot:           bot,
-		reportService: reportService,
+		Handler: handler,
 	}
 }
 
@@ -28,34 +24,13 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	return now.Add(time.Hour)
+	return now.Add(time.Minute)
 }
 
 func (j *DailyReportJob) Run(ctx context.Context) error {
-	slog.Debug("DailyReportJob.Run")
-	users, _ := j.reportService.GetUsersForDailyReport(ctx)
-
-	for _, userTGID := range users {
-
-		report, err := j.reportService.BuildDailyReport(
-			ctx,
-			userTGID,
-		)
-		if err != nil {
-			slog.Error("reportService.BuildDailyReport", "Error", err)
-		}
-
-		text := reportformatter.BuildDailyReportText(report)
-		slog.Debug("Report", "userTGID", userTGID)
-		slog.Debug("Report", "text", text)
-		msg := tgbotapi.NewMessage(userTGID, text)
-		msg.ParseMode = tgbotapi.ModeHTML
-
-		_, err = j.bot.Send(msg)
-		if err != nil {
-			slog.Error("Daily report run", "Error", err)
-		}
-	}
-
+	fn_name := "DailyReportJob.Run"
+	slog.Debug(fmt.Sprintf("+%s", fn_name))
+	j.Handler.HandleDailyReports(ctx)
+	slog.Debug(fmt.Sprintf("-%s", fn_name))
 	return nil
 }

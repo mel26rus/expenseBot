@@ -19,7 +19,7 @@ const constDataMenuSettings = "menu:settings"
 const constDailyReportChange = "menu:dailyreport"
 const constMonthlyReportChange = "menu:monthlyreport"
 
-func FormatAmount(a float64) string {
+func formatAmount(a float64) string {
 	if a == float64(int64(a)) {
 		return fmt.Sprintf("%d", int64(a))
 	}
@@ -105,17 +105,17 @@ func (f *TransactionFlow) generateFinalTxMessage(ctx context.Context, payload mo
 💰 <b>Баланс:</b> <code>%s</code>
 `,
 		icon,
-		FormatAmount(payload.Amount),
+		formatAmount(payload.Amount),
 		f.accountService.GetAccountTitle(ctx, payload.AccountID),
 		payload.Comment,
-		FormatAmount(balance),
+		formatAmount(balance),
 	)
 	return messageText
 }
 
 func (f *TransactionFlow) generateFinalTxMessageWithTransfer(ctx context.Context, payload model.TxPayload) string {
-	balanceFrom := FormatAmount(f.accountService.GetAccountBalance(ctx, payload.AccountID))
-	balanceTo := FormatAmount(f.accountService.GetAccountBalance(ctx, payload.AccountToID))
+	balanceFrom := formatAmount(f.accountService.GetAccountBalance(ctx, payload.AccountID))
+	balanceTo := formatAmount(f.accountService.GetAccountBalance(ctx, payload.AccountToID))
 	exchangeRate := "1"
 	if payload.AmountTo < payload.Amount {
 		exchangeRate = fmt.Sprintf("%.2f", payload.Amount/payload.AmountTo)
@@ -135,8 +135,8 @@ func (f *TransactionFlow) generateFinalTxMessageWithTransfer(ctx context.Context
 			`,
 		f.accountService.GetAccountTitle(ctx, payload.AccountID),
 		f.accountService.GetAccountTitle(ctx, payload.AccountToID),
-		FormatAmount(payload.Amount),
-		FormatAmount(payload.AmountTo),
+		formatAmount(payload.Amount),
+		formatAmount(payload.AmountTo),
 		exchangeRate,
 		f.accountService.GetAccountTitle(ctx, payload.AccountID),
 		balanceFrom,
