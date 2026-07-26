@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"expense-bot/internal/model"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -129,18 +130,32 @@ func (r *ReportRepo) GetUserAccounts(
 	return accounts, nil
 }
 
-func (r *ReportRepo) GetUsersHasTransactions(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
-	rows, err := r.db.Query(ctx, `
+func (r *ReportRepo) GetUsersHasTransactionsTgIDs(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
+
+	duration := EndDate.Sub(StartDate)
+	days := int(duration.Hours() / 24)
+	typeReportCondition := ``
+	if days > 1 {
+		typeReportCondition = ` u.ismonhtlyreport = TRUE `
+	} else {
+		typeReportCondition = ` u.isdailyreport = TRUE `
+	}
+	sql := fmt.Sprintf(`
 		SELECT DISTINCT
 			u.telegram_id 
 		FROM transactions t
 		JOIN users u ON u.id = t.user_id
 		WHERE
-			u.isdailyreport = TRUE
+			%s
 			AND t.created_at >= $1
 			AND t.created_at < $2
 		ORDER BY u.telegram_id
-	`,
+		`,
+		typeReportCondition,
+	)
+
+	rows, err := r.db.Query(ctx,
+		sql,
 		StartDate,
 		EndDate,
 	)

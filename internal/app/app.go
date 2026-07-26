@@ -23,7 +23,7 @@ type App struct {
 
 // тут всё запускаем впринципе оно и так есть
 func (a *App) Run(ctx context.Context) {
-	a.Logger.Debug("+App.run")
+	a.Logger.Info("+App.run")
 	a.Logger.Debug("+App.boot")
 	a.Boot()
 	a.Logger.Debug("-App.boot")
@@ -33,5 +33,5 @@ func (a *App) Run(ctx context.Context) {
 	a.Logger.Info("+handler.Start(ctx)")
 	a.handler.Start(ctx)
 	a.Logger.Info("-handler.Start(ctx)")
-	a.Logger.Debug("-App.run")
+	a.Logger.Info("-App.run")
 }

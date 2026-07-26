@@ -74,6 +74,10 @@ func (a *App) Boot() {
 		scheduler.NewDailyReportJob(reportHandler),
 	)
 
+	sch.Add(
+		scheduler.NewMonthlyReportJob(reportHandler),
+	)
+
 	a.Scheduler = sch
 
 	slog.Info("Boot aplication completed")

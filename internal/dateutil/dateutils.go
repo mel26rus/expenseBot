@@ -31,7 +31,7 @@ func Yesterday() (time.Time, time.Time) {
 
 }
 
-func CurrentMonth() (time.Time, time.Time) {
+func FirstDateInMonth() (time.Time, time.Time) {
 
 	now := time.Now()
 
@@ -46,7 +46,14 @@ func CurrentMonth() (time.Time, time.Time) {
 		now.Location(),
 	)
 
-	end := time.Date(
+	return start, start
+
+}
+
+func CurrentMonth() (time.Time, time.Time) {
+	now := time.Now()
+
+	start := time.Date(
 		now.Year(),
 		now.Month(),
 		1,
@@ -57,14 +64,15 @@ func CurrentMonth() (time.Time, time.Time) {
 		now.Location(),
 	)
 
-	return start, end
+	end := start.AddDate(0, 1, 0)
 
+	return start, end
 }
 
 func PreviousMonth() (time.Time, time.Time) {
 
-	start, end := CurrentMonth()
+	start, end := FirstDateInMonth()
 
-	return start.AddDate(0, -1, 0), end.AddDate(0, -1, 0)
+	return start.AddDate(0, -1, 0), end.AddDate(0, 0, 0)
 
 }

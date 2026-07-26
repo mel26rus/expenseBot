@@ -29,72 +29,60 @@ func NewReportFlow(
 	}
 }
 
-func (r *ReportFlow) GetYesterdayTxUserIDs(ctx context.Context) ([]int64, error) {
-	return r.reportService.GetUsersIDYesterdayReport(ctx)
+func (r *ReportFlow) GetExistsTxUserTgIDs(ctx context.Context, startDate time.Time, endDate time.Time) ([]int64, error) {
+	return r.reportService.GetExistsTxUserTgIDsReport(ctx, startDate, endDate)
 }
 
-func (r *ReportFlow) BuildUserDailyReport(ctx context.Context, userTGID int64) (Response, int64, error) {
+func (r *ReportFlow) BuildUserReport(ctx context.Context, tgID int64, start time.Time, end time.Time) (Response, error) {
 
-	user, err := r.userService.GetOrCreate(ctx, userTGID)
+	user, err := r.userService.GetOrCreate(ctx, tgID)
 	session, err := r.sessionService.GetUserSession(ctx, user.ID)
-	report, err := r.reportService.BuildDailyReport(
+	report, err := r.reportService.BuildUserReport(
 		ctx,
 		user.TelegramID,
+		start,
+		end,
 	)
 	if err != nil {
 		slog.Error("reportService.BuildDailyReport", "Error", err)
-		return Response{}, user.TelegramID, err
+		return Response{}, err
 	}
 
-	text := r.BuildDailyReportText(report)
+	text := r.BuildReportText(report, start, end)
 	res := Response{
 		Text:              text,
 		IsSendMenuMessage: true,
 		Keyboard:          nil,
 		EditMessageId:     session.EditMessageId,
 	}
-	return res, user.TelegramID, nil
+	return res, nil
 }
 
-func (r *ReportFlow) BuildDailyReports(ctx context.Context, session model.Session) ([]Response, error) {
-
-	var resArr []Response
-	usersIDs, _ := r.reportService.GetUsersIDYesterdayReport(ctx)
-
-	for _, userID := range usersIDs {
-
-		report, err := r.reportService.BuildDailyReport(
-			ctx,
-			userID,
-		)
-		if err != nil {
-			slog.Error("reportService.BuildDailyReport", "Error", err)
-			return nil, err
-		}
-		text := r.BuildDailyReportText(report)
-		res := Response{
-			Text:              text,
-			IsSendMenuMessage: true,
-			EditMessageId:     session.EditMessageId,
-			Keyboard:          nil,
-		}
-		resArr = append(resArr, res)
-	}
-
-	return resArr, nil
-
-}
-
-func (r *ReportFlow) BuildDailyReportText(report []*model.AccountReport) string {
+func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.Time, end time.Time) string {
 
 	var sb strings.Builder
 
-	sb.WriteString(
-		fmt.Sprintf(
-			"📅 <b>Отчет за %s</b>\n",
-			time.Now().AddDate(0, 0, -1).Format("02.01.2006"),
-		),
-	)
+	duration := end.Sub(start)
+	days := int(duration.Hours() / 24)
+	if days == 1 {
+		sb.WriteString(
+			fmt.Sprintf(
+				"📅 <b>Отчет за месяц %s</b>\n",
+				time.Now().AddDate(0, 0, -1).Format("02.01.2006"),
+			),
+		)
+	} else {
+		monTitle := start.Format("January 2006")
+		monName := start.Format("January")
+		monTitle = strings.Replace(monTitle, monName, getRussianMonthName(start), 1)
+
+		sb.WriteString(
+			fmt.Sprintf(
+				"📅 <b>Отчет за %s</b>\n",
+				monTitle,
+			),
+		)
+	}
 
 	for _, account := range report {
 
@@ -229,5 +217,37 @@ func emoji(category string) string {
 
 	default:
 		return "• "
+	}
+}
+
+func getRussianMonthName(date time.Time) string {
+	month := date.Format("January")
+	switch month {
+	case "January":
+		return "Январь"
+	case "February":
+		return "Февраль"
+	case "March":
+		return "Март"
+	case "April":
+		return "Апрель"
+	case "May":
+		return "Май"
+	case "June":
+		return "Июнь"
+	case "July":
+		return "Июль"
+	case "August":
+		return "Август"
+	case "September":
+		return "Сентябрь"
+	case "October":
+		return "Октябрь"
+	case "November":
+		return "Ноябрь"
+	case "December":
+		return "Декабрь"
+	default:
+		return month
 	}
 }

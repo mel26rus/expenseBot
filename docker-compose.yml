@@ -7,4 +7,4 @@ services:
       - ./config.yaml:/app/config.yaml
       - ./logs:/app/logs
 
-    #restart: unless-stopped
+    restart: unless-stopped

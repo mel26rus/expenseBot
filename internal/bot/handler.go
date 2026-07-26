@@ -2,9 +2,11 @@ package bot
 
 import (
 	"context"
+	"expense-bot/internal/dateutil"
 	"expense-bot/internal/flow"
 	"fmt"
 	"log/slog"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -13,6 +15,8 @@ type Handler struct {
 	bot  *tgbotapi.BotAPI
 	flow *flow.MainFlow
 }
+
+const timeLayout = "2006-01-02 15:04:05"
 
 func NewHandler(bot *tgbotapi.BotAPI, flow *flow.MainFlow) *Handler {
 	return &Handler{
@@ -174,17 +178,27 @@ func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 }
 
 func (h *Handler) HandleDailyReports(ctx context.Context) {
-	usersIDs, err := h.flow.ReportFlow.GetYesterdayTxUserIDs(ctx)
+	start, end := dateutil.Yesterday()
+	slog.Debug("HandleDailyReports", "start", start.Format(timeLayout), "end", end.Format(timeLayout))
+	h.sendReports(ctx, start, end)
+}
+func (h *Handler) HandleMonthlyReports(ctx context.Context) {
+	start, end := dateutil.PreviousMonth()
+	slog.Debug("HandleMaonthlyReports", "start", start.Format(timeLayout), "end", end.Format(timeLayout))
+	h.sendReports(ctx, start, end)
+}
+
+func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Time) {
+	usersTgIDs, err := h.flow.ReportFlow.GetExistsTxUserTgIDs(ctx, start, end)
 	if err != nil {
 		slog.Error("HandleDailyReports", "Error", err)
 	}
 
-	for _, userID := range usersIDs {
+	for _, userTgID := range usersTgIDs {
 		var res flow.Response
-		var userTgId int64
-		res, userTgId, err = h.flow.ReportFlow.BuildUserDailyReport(ctx, userID)
+		res, err = h.flow.ReportFlow.BuildUserReport(ctx, userTgID, start, end)
 
-		editMessage := tgbotapi.NewEditMessageText(userTgId, int(res.EditMessageId), res.Text)
+		editMessage := tgbotapi.NewEditMessageText(userTgID, int(res.EditMessageId), res.Text)
 		editMessage.ParseMode = tgbotapi.ModeHTML
 		_, err = h.bot.Send(editMessage)
 		if err != nil {
@@ -192,7 +206,7 @@ func (h *Handler) HandleDailyReports(ctx context.Context) {
 		}
 		if res.IsSendMenuMessage {
 			res, _ := h.flow.GenerateFirstMessage()
-			menuMessage := tgbotapi.NewMessage(userTgId, res.Text)
+			menuMessage := tgbotapi.NewMessage(userTgID, res.Text)
 			menuMessage.ReplyMarkup = res.Keyboard
 			menuMessage.ParseMode = tgbotapi.ModeHTML
 			sendedMessage, err := h.bot.Send(menuMessage)
@@ -200,7 +214,7 @@ func (h *Handler) HandleDailyReports(ctx context.Context) {
 				slog.Error("MainFlow.handleMessage error_4", "error", err)
 			}
 			slog.Debug("HandleDailyReports end", "response.IsSendMenuMessage", res.IsSendMenuMessage, "sendedMessage.MessageID", sendedMessage.MessageID)
-			h.flow.SetUserSessionMessageId(context.Background(), userTgId, int64(sendedMessage.MessageID))
+			h.flow.SetUserSessionMessageId(context.Background(), userTgID, int64(sendedMessage.MessageID))
 		}
 
 	}

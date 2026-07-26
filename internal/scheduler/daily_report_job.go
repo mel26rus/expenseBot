@@ -24,26 +24,6 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	/*
-		//для месячного
-		next := time.Date(
-			now.Year(),
-			now.Month(),
-			1,
-			7, 0, 0, 0,
-			now.Location(),
-		)
-
-		if !next.After(now) {
-			next = time.Date(
-				now.Year(),
-				now.Month()+1,
-				1,
-				7, 0, 0, 0,
-				now.Location(),
-			)
-		}
-	*/
 	next := time.Date(
 		now.Year(),
 		now.Month(),
