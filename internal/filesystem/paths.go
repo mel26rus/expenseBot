@@ -1,15 +1,14 @@
 package filesystem
 
 import (
+	"expense-bot/internal/platform"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/sys/windows/svc"
 )
 
 func BaseDir(configFile string) string {
 
-	isService, _ := svc.IsWindowsService()
+	isService, _ := platform.IsService()
 
 	// Если запущено из IDE / go run
 	if wd, err := os.Getwd(); err == nil {

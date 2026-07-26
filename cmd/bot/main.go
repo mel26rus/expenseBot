@@ -9,12 +9,12 @@ import (
 	"syscall"
 
 	"github.com/kardianos/service"
-	"golang.org/x/sys/windows/svc"
 
 	"expense-bot/internal/app"
 	"expense-bot/internal/config"
 	"expense-bot/internal/db"
 	"expense-bot/internal/logger"
+	"expense-bot/internal/platform"
 	"expense-bot/internal/servicehost"
 )
 
@@ -43,7 +43,7 @@ func main() {
 	defer dbPool.Close()
 	defer slog.Info("dbPool closed")
 
-	isService, err := svc.IsWindowsService()
+	isService, err := platform.IsService()
 	if err != nil {
 		slog.Error("failed to detect service mode: ", "Error", err)
 		return
