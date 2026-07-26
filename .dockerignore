@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+.vscode
+.idea
+
+logs
+bin
+build
+dist
+
+*.log
+
+Dockerfile
+docker-compose.yml
+
+README.md
