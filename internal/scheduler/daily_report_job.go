@@ -24,7 +24,39 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	return now.Add(time.Minute)
+	/*
+		//для месячного
+		next := time.Date(
+			now.Year(),
+			now.Month(),
+			1,
+			7, 0, 0, 0,
+			now.Location(),
+		)
+
+		if !next.After(now) {
+			next = time.Date(
+				now.Year(),
+				now.Month()+1,
+				1,
+				7, 0, 0, 0,
+				now.Location(),
+			)
+		}
+	*/
+	next := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		6, 0, 0, 0,
+		now.Location(),
+	)
+
+	if !next.After(now) {
+		next = next.AddDate(0, 0, 1)
+	}
+
+	return next
 }
 
 func (j *DailyReportJob) Run(ctx context.Context) error {

@@ -86,8 +86,6 @@ func main() {
 		return
 	}
 
-	application.Boot()
-
 	if !isService {
 		ctx, stop := signal.NotifyContext(
 			context.Background(),

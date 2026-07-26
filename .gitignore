@@ -3,3 +3,5 @@
 *.exe
 *.mod
 *.sum
+*.png
+/db_bak

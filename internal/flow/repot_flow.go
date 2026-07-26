@@ -71,7 +71,6 @@ func (r *ReportFlow) BuildDailyReports(ctx context.Context, session model.Sessio
 			slog.Error("reportService.BuildDailyReport", "Error", err)
 			return nil, err
 		}
-		//наверное отправлять лучше через handler а не городить тут логику с botAPI
 		text := r.BuildDailyReportText(report)
 		res := Response{
 			Text:              text,
@@ -80,8 +79,6 @@ func (r *ReportFlow) BuildDailyReports(ctx context.Context, session model.Sessio
 			Keyboard:          nil,
 		}
 		resArr = append(resArr, res)
-		// здесь нужна ещё логика если у нас был отправлен отчет
-		// что при следующей активности надо изменяемое сообщение удалить и создать новое что бы оно было внизу
 	}
 
 	return resArr, nil
