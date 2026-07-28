@@ -25,24 +25,26 @@ func (j *MonthlyReportJob) Name() string {
 func (j *MonthlyReportJob) NextRun(now time.Time) time.Time {
 
 	//для месячного
-	next := time.Date(
-		now.Year(),
-		now.Month(),
-		1,
-		12, 0, 0, 0,
-		now.Location(),
-	)
-
-	if !next.After(now) {
-		next = time.Date(
+	/*
+		next := time.Date(
 			now.Year(),
-			now.Month()+1,
+			now.Month(),
 			1,
 			12, 0, 0, 0,
 			now.Location(),
 		)
-	}
-	return next
+
+		if !next.After(now) {
+			next = time.Date(
+				now.Year(),
+				now.Month()+1,
+				1,
+				12, 0, 0, 0,
+				now.Location(),
+			)
+		}
+	*/
+	return now.Add(time.Second * 10)
 }
 
 func (j *MonthlyReportJob) Run(ctx context.Context) error {

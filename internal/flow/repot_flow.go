@@ -6,6 +6,7 @@ import (
 	"expense-bot/internal/service"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -67,19 +68,17 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 	if days == 1 {
 		sb.WriteString(
 			fmt.Sprintf(
-				"📅 <b>Отчет за месяц %s</b>\n",
+				"📅 <b>Отчет за %s</b>\n",
 				time.Now().AddDate(0, 0, -1).Format("02.01.2006"),
 			),
 		)
 	} else {
-		monTitle := start.Format("January 2006")
-		monName := start.Format("January")
-		monTitle = strings.Replace(monTitle, monName, getRussianMonthName(start), 1)
+		startTitle := fmt.Sprintf("%s %s", getRussianMonthName(int(start.Month())), strconv.Itoa(start.Year()))
 
 		sb.WriteString(
 			fmt.Sprintf(
 				"📅 <b>Отчет за %s</b>\n",
-				monTitle,
+				startTitle,
 			),
 		)
 	}
@@ -220,34 +219,33 @@ func emoji(category string) string {
 	}
 }
 
-func getRussianMonthName(date time.Time) string {
-	month := date.Format("January")
-	switch month {
-	case "January":
+func getRussianMonthName(monNum int) string {
+	switch monNum {
+	case 1:
 		return "Январь"
-	case "February":
+	case 2:
 		return "Февраль"
-	case "March":
+	case 3:
 		return "Март"
-	case "April":
+	case 4:
 		return "Апрель"
-	case "May":
+	case 5:
 		return "Май"
-	case "June":
+	case 6:
 		return "Июнь"
-	case "July":
+	case 7:
 		return "Июль"
-	case "August":
+	case 8:
 		return "Август"
-	case "September":
+	case 9:
 		return "Сентябрь"
-	case "October":
+	case 10:
 		return "Октябрь"
-	case "November":
+	case 11:
 		return "Ноябрь"
-	case "December":
+	case 12:
 		return "Декабрь"
 	default:
-		return month
+		return "неизвестный номер месяца"
 	}
 }
