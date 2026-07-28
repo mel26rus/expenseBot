@@ -22,6 +22,7 @@ type AppConfig struct {
 	LogConfig LogConfig      `yaml:"log_config"`
 	Database  DatabaseConfig `yaml:"database"`
 	BotKey    string         `yaml:"bot_key"`
+	BotProxy  string         `yaml:"bot_proxy"`
 	AppName   string         `yaml:"app_name"`
 }
 
@@ -47,8 +48,9 @@ func defaultConfig() *AppConfig {
 		Database: DatabaseConfig{
 			URL: DefaultDatabaseURL,
 		},
-		BotKey:  "",
-		AppName: "ExpenseTGBot",
+		BotKey:   "",
+		BotProxy: "",
+		AppName:  "ExpenseTGBot",
 	}
 }
 

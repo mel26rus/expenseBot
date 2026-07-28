@@ -5,3 +5,4 @@
 *.sum
 *.png
 /db_bak
+vpn-config.json

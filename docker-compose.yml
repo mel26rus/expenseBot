@@ -1,4 +1,15 @@
 services:
+  vpn:
+    image: teddysun/xray:latest
+    container_name: expense-bot-vpn
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      # Монтируем текущую папку хоста (.) в папку /etc/xray в контейнере
+      - .:/etc/xray:ro
+    # Явно указываем Xray читать наш файл из этой папки
+    command: ["xray", "run", "-c", "/etc/xray/vpn-config.json"]
   bot:
     build: .
     container_name: expense-bot
@@ -6,5 +17,13 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml
       - ./logs:/app/logs
-
+      
+    environment:
+      - TZ=Europe/Moscow
+      - GODEBUG=http2client=0
     restart: unless-stopped
+    network_mode: "service:vpn"
+    depends_on:
+      - vpn
+
+    #docker compose up --build      

@@ -6,7 +6,11 @@ import (
 	"expense-bot/internal/repository"
 	"expense-bot/internal/scheduler"
 	"expense-bot/internal/service"
+	"log"
 	"log/slog"
+	"net/http"
+	"net/url"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -14,12 +18,36 @@ import (
 func (a *App) Boot() {
 	slog.Info("Booting application")
 
-	var err error
-	a.botAPI, err = tgbotapi.NewBotAPI(a.Config.BotKey)
-	if err != nil {
-		a.Logger.Error("bot init failed", "error", err)
-		return
+	if a.Config.BotProxy > "" {
+		proxyURL, err := url.Parse(a.Config.BotProxy)
+		if err != nil {
+			slog.Error("Parse proxy", "Error", err)
+			return
+		}
+
+		transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+		client := &http.Client{
+			Transport: transport,
+			Timeout:   time.Second * 30,
+		}
+
+		bot, err := tgbotapi.NewBotAPIWithClient(a.Config.BotKey, tgbotapi.APIEndpoint, client)
+		if err != nil {
+			log.Panic(err)
+			return
+		}
+
+		bot.Debug = true
+		slog.Info("Bot", "Авторизован под аккаунтом %s", bot.Self.UserName)
+	} else {
+		var err error
+		a.botAPI, err = tgbotapi.NewBotAPI(a.Config.BotKey)
+		if err != nil {
+			a.Logger.Error("bot init failed", "error", err)
+			return
+		}
 	}
+
 	slog.Info("botApi inited")
 	// repos
 	userRepo := repository.NewUserRepo(a.DB)
