@@ -73,7 +73,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 			h.appendCancelButton(response.Keyboard)
 			editMessage.ReplyMarkup = response.Keyboard
 		}
-		editMessage.ParseMode = "HTML"
+		editMessage.ParseMode = tgbotapi.ModeHTML
 		_, err := h.bot.Send(editMessage)
 		if err != nil {
 			slog.Error(fmt.Sprintf("%s error_1", fn_name), "error", err)
@@ -81,6 +81,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 			if editMessage.ReplyMarkup != nil {
 				newMessage.ReplyMarkup = editMessage.ReplyMarkup
 			}
+			newMessage.ParseMode = tgbotapi.ModeHTML
 			_, err = h.bot.Send(newMessage)
 			if err != nil {
 				slog.Error(fmt.Sprintf("%s error_1_1", fn_name), "Error", err)
@@ -101,7 +102,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 			if editMessage.ReplyMarkup != nil {
 				newMessage.ReplyMarkup = editMessage.ReplyMarkup
 			}
-			editMessage.ParseMode = tgbotapi.ModeHTML
+			newMessage.ParseMode = tgbotapi.ModeHTML
 			sendedMessage, err = h.bot.Send(newMessage)
 			if err != nil {
 				slog.Error(fn_name+" error_2_1", "error", err)
@@ -122,7 +123,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 		res, _ := h.flow.GenerateFirstMessage()
 		menuMessagee := tgbotapi.NewMessage(msg.Chat.ID, res.Text)
 		menuMessagee.ReplyMarkup = res.Keyboard
-		menuMessagee.ParseMode = "HTML"
+		menuMessagee.ParseMode = tgbotapi.ModeHTML
 		sendedMessage, err := h.bot.Send(menuMessagee)
 		if err != nil {
 			slog.Error(fn_name+" error_3", "error", err)

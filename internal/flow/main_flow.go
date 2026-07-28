@@ -54,6 +54,9 @@ func (f *MainFlow) HandleMessage(ctx context.Context, tgUserID int64, text strin
 			slog.Debug("MainFlow.HandleMessage: Parsed amount", "tgUserID", tgUserID, "amount", amount)
 			return f.transactionFlow.Start(ctx, session, amount)
 		}
+		if text == "/start" {
+			return f.GenerateFirstMessage()
+		}
 		slog.Debug("MainFlow.HandleMessage: StateIdle but not amount", "tgUserID", tgUserID, "text", text)
 		return f.accountFlow.Start(ctx, session, text)
 
@@ -84,11 +87,6 @@ func (f *MainFlow) HandleCallback(ctx context.Context, tgUserID int64, data stri
 		return res, err
 	}
 	return f.accountFlow.HandleCallback(ctx, session, data)
-}
-
-func (f *MainFlow) HandleDailyReports(ctx context.Context) ([]Response, error) {
-
-	return nil, nil
 }
 
 // да да мне не нравится что тут tgUserID, но пока так, потом можно будет юзера по id доставать и юзать его tgId там, а не передавать его везде

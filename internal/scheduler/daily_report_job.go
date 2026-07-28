@@ -35,7 +35,7 @@ func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 	if !next.After(now) {
 		next = next.AddDate(0, 0, 1)
 	}
-
+	// return now.Add(time.Minute)
 	return next
 }
 
