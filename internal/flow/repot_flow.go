@@ -37,7 +37,9 @@ func (r *ReportFlow) GetExistsTxUserTgIDs(ctx context.Context, startDate time.Ti
 func (r *ReportFlow) BuildUserReport(ctx context.Context, tgID int64, start time.Time, end time.Time) (Response, error) {
 
 	user, err := r.userService.GetOrCreate(ctx, tgID)
+	slog.Debug("BuildUserReport_1", "user_id", user.ID, "tguserid", user.TelegramID)
 	session, err := r.sessionService.GetUserSession(ctx, user.ID)
+	slog.Debug("BuildUserReport_2", "session", session)
 	report, err := r.reportService.BuildUserReport(
 		ctx,
 		user.TelegramID,

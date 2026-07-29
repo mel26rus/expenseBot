@@ -17,7 +17,8 @@ type AccountReport struct {
 }
 
 type TransactionsReport struct {
-	AccountId int64
-	Category  string
-	Amount    float64
+	AccountId    int64
+	Expense_type string
+	Category     string
+	Amount       float64
 }

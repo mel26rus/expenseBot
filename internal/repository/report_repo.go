@@ -27,9 +27,9 @@ func (r *ReportRepo) GetAccountTransactions(
 	rows, err := r.db.Query(ctx, `
 		SELECT
 			t.account_id,
+			case when t.amount > 0 then 'income' else 'expense' end as expense_type,
 			LOWER(t.comment) AS category,
 			SUM(t.amount) AS amount
-
 		FROM transactions t
 		join users u on u.id = t.user_id 
 		WHERE u.telegram_id = $1
@@ -37,8 +37,9 @@ func (r *ReportRepo) GetAccountTransactions(
 		AND t.created_at <  $3
 
 		GROUP BY
-			t.account_id,
-			LOWER(t.comment)
+			1,
+			2,
+			3
 
 		ORDER BY
 			t.account_id,
@@ -56,7 +57,7 @@ func (r *ReportRepo) GetAccountTransactions(
 	var transactions []*model.TransactionsReport
 	for rows.Next() {
 		var tr model.TransactionsReport
-		err := rows.Scan(&tr.AccountId, &tr.Category, &tr.Amount)
+		err := rows.Scan(&tr.AccountId, &tr.Expense_type, &tr.Category, &tr.Amount)
 		if err != nil {
 			return nil, err
 		}

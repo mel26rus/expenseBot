@@ -198,7 +198,7 @@ func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Tim
 	for _, userTgID := range usersTgIDs {
 		var res flow.Response
 		res, err = h.flow.ReportFlow.BuildUserReport(ctx, userTgID, start, end)
-
+		slog.Debug("SendReports_1 Editing message", "userTgID", userTgID, "EditMessageId", res.EditMessageId)
 		editMessage := tgbotapi.NewEditMessageText(userTgID, int(res.EditMessageId), res.Text)
 		editMessage.ParseMode = tgbotapi.ModeHTML
 		_, err = h.bot.Send(editMessage)
@@ -212,7 +212,7 @@ func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Tim
 			menuMessage.ParseMode = tgbotapi.ModeHTML
 			sendedMessage, err := h.bot.Send(menuMessage)
 			if err != nil {
-				slog.Error("MainFlow.handleMessage error_4", "error", err)
+				slog.Error("MainFlow.SendReports_2 error_4", "error", err)
 			}
 			slog.Debug("HandleDailyReports end", "response.IsSendMenuMessage", res.IsSendMenuMessage, "sendedMessage.MessageID", sendedMessage.MessageID)
 			h.flow.SetUserSessionMessageId(context.Background(), userTgID, int64(sendedMessage.MessageID))

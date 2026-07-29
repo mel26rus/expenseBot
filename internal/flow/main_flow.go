@@ -99,6 +99,7 @@ func (f *MainFlow) SetUserSessionMessageId(ctx context.Context, tgUserID int64, 
 	if err != nil {
 		return Response{Text: "7_Ошибка при установке ID сообщения"}, err
 	}
+	slog.Debug("SetUserSessionMessageId", "user.ID", user.ID, "editMessageId", editMessageId)
 	return Response{}, nil
 }
 
