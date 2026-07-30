@@ -3,14 +3,12 @@ package scheduler
 import (
 	"context"
 	"log/slog"
-	"sync/atomic"
 	"time"
 )
 
 type scheduledJob struct {
 	job     Job
 	nextRun time.Time
-	running atomic.Bool
 }
 
 type Scheduler struct {
@@ -44,10 +42,6 @@ func (s *Scheduler) Run(ctx context.Context) {
 			if next == nil || job.nextRun.Before(next.nextRun) {
 				next = job
 			}
-		}
-
-		if !next.running.CompareAndSwap(false, true) {
-			continue
 		}
 
 		timer := time.NewTimer(time.Until(next.nextRun))
