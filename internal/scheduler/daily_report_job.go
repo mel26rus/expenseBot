@@ -24,19 +24,19 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	// next := time.Date(
-	// 	now.Year(),
-	// 	now.Month(),
-	// 	now.Day(),
-	// 	6, 0, 0, 0,
-	// 	now.Location(),
-	// )
+	next := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		6, 0, 0, 0,
+		now.Location(),
+	)
 
-	// if !next.After(now) {
-	// 	next = next.AddDate(0, 0, 1)
-	// }
-	return now.Add(time.Minute)
-	// return next
+	if !next.After(now) {
+		next = next.AddDate(0, 0, 1)
+	}
+	return next
+	// return now.Add(time.Minute)
 }
 
 func (j *DailyReportJob) Run(ctx context.Context) error {
