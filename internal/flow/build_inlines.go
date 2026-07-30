@@ -82,5 +82,28 @@ func buildMenuSettingsInline(isDaily bool, isMonthly bool) *tgbotapi.InlineKeybo
 
 func buildMenuMainInline() *tgbotapi.InlineKeyboardMarkup {
 	ikb := tgbotapi.NewInlineKeyboardMarkup()
+	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("📋 Отчеты", constMenuReports)))
+	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🧾 Счета", constMenuAccounts)))
+	return &ikb
+}
+
+func buildMenuReportsInline() *tgbotapi.InlineKeyboardMarkup {
+	ikb := tgbotapi.NewInlineKeyboardMarkup()
+	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("📋 Потрачено сегодня", constMenuTodayReport)))
+	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🧾 Потрачено за месяц", constMenuCurrMonthReport)))
+	return &ikb
+}
+
+func buildMenuUserAccountsInline(list []*model.Account) *tgbotapi.InlineKeyboardMarkup {
+
+	var rows [][]tgbotapi.InlineKeyboardButton
+	for _, c := range list {
+		btn := tgbotapi.NewInlineKeyboardButtonData(
+			c.Name,
+			fmt.Sprintf("account:%d", c.ID),
+		)
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+	}
+	ikb := tgbotapi.NewInlineKeyboardMarkup(rows...)
 	return &ikb
 }

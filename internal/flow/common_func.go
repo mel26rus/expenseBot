@@ -18,6 +18,10 @@ const constDataMenuMain = "menu:main"
 const constDataMenuSettings = "menu:settings"
 const constDailyReportChange = "menu:dailyreport"
 const constMonthlyReportChange = "menu:monthlyreport"
+const constMenuReports = "menu:reports"
+const constMenuTodayReport = "menu:todayreport"
+const constMenuCurrMonthReport = "menu:curmonrep"
+const constMenuAccounts = "menu:accounts"
 
 func formatAmount(a float64) string {
 	if a == float64(int64(a)) {

@@ -8,14 +8,17 @@ import (
 )
 
 type MenuFlow struct {
-	userService *service.UserService
+	userService    *service.UserService
+	accountService *service.AccountService
 }
 
 func NewMenuFlow(
 	u *service.UserService,
+	a *service.AccountService,
 ) *MenuFlow {
 	return &MenuFlow{
-		userService: u,
+		userService:    u,
+		accountService: a,
 	}
 }
 
@@ -33,6 +36,11 @@ func (m *MenuFlow) HandleCallback(ctx context.Context, session model.Session, da
 	case constMonthlyReportChange:
 		userSettings, err := m.userService.ChangeMonthlyReportConfig(ctx, session.UserID)
 		return Response{Keyboard: buildMenuSettingsInline(userSettings.IsDailyReport, userSettings.IsMonthlyReport), IsSendMenuMessage: false}, err
+	case constMenuReports:
+		return Response{Keyboard: buildMenuReportsInline()}, nil
+	case constMenuAccounts:
+		accList, err := m.accountService.GetAccountsByUserID(ctx, session.UserID)
+		return Response{Keyboard: buildMenuUserAccountsInline(accList)}, err
 	default:
 		return Response{}, nil
 	}
