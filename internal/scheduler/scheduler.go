@@ -3,12 +3,14 @@ package scheduler
 import (
 	"context"
 	"log/slog"
+	"sync/atomic"
 	"time"
 )
 
 type scheduledJob struct {
 	job     Job
 	nextRun time.Time
+	running atomic.Bool
 }
 
 type Scheduler struct {
@@ -44,6 +46,10 @@ func (s *Scheduler) Run(ctx context.Context) {
 			}
 		}
 
+		if !next.running.CompareAndSwap(false, true) {
+			continue
+		}
+
 		timer := time.NewTimer(time.Until(next.nextRun))
 
 		select {
@@ -61,6 +67,8 @@ func (s *Scheduler) Run(ctx context.Context) {
 				"name", next.job.Name(),
 			)
 
+			next.nextRun = next.job.NextRun(time.Now())
+
 			go func(job *scheduledJob) {
 
 				if err := job.job.Run(ctx); err != nil {
@@ -72,8 +80,6 @@ func (s *Scheduler) Run(ctx context.Context) {
 				}
 
 			}(next)
-
-			next.nextRun = next.job.NextRun(time.Now())
 		}
 	}
 }
