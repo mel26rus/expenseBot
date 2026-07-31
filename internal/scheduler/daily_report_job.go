@@ -35,8 +35,9 @@ func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 	if !next.After(now) {
 		next = next.AddDate(0, 0, 1)
 	}
+	// next := now.Add(time.Minute * 10)
+	slog.Debug("j.NextRun", "Next", next)
 	return next
-	// return now.Add(time.Minute)
 }
 
 func (j *DailyReportJob) Run(ctx context.Context) error {

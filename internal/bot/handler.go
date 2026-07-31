@@ -198,12 +198,17 @@ func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Tim
 	for _, userTgID := range usersTgIDs {
 		var res flow.Response
 		res, err = h.flow.ReportFlow.BuildUserReport(ctx, userTgID, start, end)
-		slog.Debug("SendReports_1 Editing message", "userTgID", userTgID, "EditMessageId", res.EditMessageId)
-		editMessage := tgbotapi.NewEditMessageText(userTgID, int(res.EditMessageId), res.Text)
-		editMessage.ParseMode = tgbotapi.ModeHTML
-		_, err = h.bot.Send(editMessage)
+		slog.Debug("SendReports_1 Deleting message", "userTgID", userTgID, "EditMessageId", res.EditMessageId)
+		delMessage := tgbotapi.NewDeleteMessage(userTgID, int(res.EditMessageId))
+		_, err = h.bot.Send(delMessage)
 		if err != nil {
-			slog.Error("HandleDailyReports.Send", "Error", err)
+			slog.Error("HandleDailyReports.Send delMessage", "Error", err)
+		}
+		msg := tgbotapi.NewMessage(userTgID, res.Text)
+		msg.ParseMode = tgbotapi.ModeHTML
+		_, err = h.bot.Send(msg)
+		if err != nil {
+			slog.Error("HandleDailyReports.Send newMessage", "Error", err)
 		}
 		if res.IsSendMenuMessage {
 			res, _ := h.flow.GenerateFirstMessage()

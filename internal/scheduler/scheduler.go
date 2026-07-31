@@ -61,7 +61,8 @@ func (s *Scheduler) Run(ctx context.Context) {
 				"name", next.job.Name(),
 			)
 
-			next.nextRun = next.job.NextRun(time.Now())
+			oldNextRun := next.nextRun
+			next.nextRun = next.job.NextRun(oldNextRun)
 
 			go func(job *scheduledJob) {
 
