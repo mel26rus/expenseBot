@@ -108,8 +108,9 @@ func (f *AccountFlow) HandleMessage(ctx context.Context, session model.Session, 
 		accountTitle := f.accountService.GetAccountTitle(ctx, accountId)
 		f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
 		return Response{
-			Text:          fmt.Sprintf("✅ %s \n Счет создан,", accountTitle),
-			EditMessageId: session.EditMessageId,
+			Text:              fmt.Sprintf("✅ %s \n Счет создан,", accountTitle),
+			EditMessageId:     session.EditMessageId,
+			IsSendMenuMessage: true,
 		}, nil
 
 	}
@@ -146,16 +147,9 @@ func (f *AccountFlow) HandleCallback(ctx context.Context, session model.Session,
 		f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
 
 		return Response{
-			Text: fmt.Sprintf("✅ %s \n Счёт создан", accountTitle),
+			Text:              fmt.Sprintf("✅ %s \n Счёт создан", accountTitle),
+			IsSendMenuMessage: true,
 		}, nil
-	}
-
-	switch data {
-	case constDataMenuMain:
-		return Response{}, nil
-	case constDataMenuSettings:
-		return Response{}, nil
-
 	}
 
 	f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)

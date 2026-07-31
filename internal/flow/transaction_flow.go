@@ -282,7 +282,10 @@ func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Sess
 
 		if err != nil {
 			slog.Error("TransactionFlow.HandleCallback: Error creating transaction", "userId", session.UserID, "error", err)
-			return Response{Text: "4_Ошибка при создании транзакции"}, nil
+			return Response{
+				Text:              "4_Ошибка при создании транзакции",
+				IsSendMenuMessage: true,
+			}, nil
 		}
 
 		balance := f.accountService.GetAccountBalance(ctx, payload.AccountID)
