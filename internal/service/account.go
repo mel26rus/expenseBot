@@ -49,3 +49,11 @@ func (s *AccountService) GetAccountCurrencyByID(ctx context.Context, accountID i
 	}
 	return currencyID
 }
+
+func (s *AccountService) GetMenuAccountsByUserID(ctx context.Context, userID int64) ([]*model.Account, error) {
+	return s.repo.GetMenuAccountsByUserID(ctx, userID)
+}
+
+func (s *AccountService) ChangeAccountIshidden(ctx context.Context, accountId int64) error {
+	return s.repo.ChangeAccountIshidden(ctx, accountId)
+}

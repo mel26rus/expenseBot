@@ -101,6 +101,7 @@ func (r *ReportRepo) GetUserAccounts(
 		where t.created_at >= $2
 			and t.created_at < $3
 			and u.telegram_id = $1
+			and a.is_hidden = false
 		group by
 			a.id,
 			a.name,
@@ -185,7 +186,7 @@ func (r *ReportRepo) GetUsersHasTransactionsTgIDs(ctx context.Context, StartDate
 	return users, nil
 }
 
-func (r *ReportRepo) GetUsersHasTransactionsMonthly(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
+func (r *ReportRepo) GetUsersHasTransactionsPeriod(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT DISTINCT
 			t.user_id

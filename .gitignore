@@ -6,3 +6,4 @@
 *.png
 /db_bak
 vpn-config.json
+*.txt

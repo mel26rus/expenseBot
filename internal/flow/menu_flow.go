@@ -5,6 +5,8 @@ import (
 	"expense-bot/internal/model"
 	"expense-bot/internal/service"
 	"log/slog"
+	"strconv"
+	"strings"
 )
 
 type MenuFlow struct {
@@ -39,9 +41,22 @@ func (m *MenuFlow) HandleCallback(ctx context.Context, session model.Session, da
 	case constMenuReports:
 		return Response{Keyboard: buildMenuReportsInline()}, nil
 	case constMenuAccounts:
-		accList, err := m.accountService.GetAccountsByUserID(ctx, session.UserID)
+		accList, err := m.accountService.GetMenuAccountsByUserID(ctx, session.UserID)
 		return Response{Keyboard: buildMenuUserAccountsInline(accList)}, err
 	default:
+		if strings.HasPrefix(data, constHideAccountChange) {
+			accountIDStr := strings.TrimPrefix(data, constHideAccountChange)
+			accountID, err := strconv.ParseInt(accountIDStr, 10, 64)
+			if err != nil {
+				return Response{}, err
+			}
+			err = m.accountService.ChangeAccountIshidden(ctx, accountID)
+			if err != nil {
+				return Response{}, err
+			}
+			accList, err := m.accountService.GetMenuAccountsByUserID(ctx, session.UserID)
+			return Response{Keyboard: buildMenuUserAccountsInline(accList)}, err
+		}
 		return Response{}, nil
 	}
 }

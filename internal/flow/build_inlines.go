@@ -98,9 +98,15 @@ func buildMenuUserAccountsInline(list []*model.Account) *tgbotapi.InlineKeyboard
 
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, c := range list {
+		var ico string
+		if c.Is_hidden {
+			ico = "🙈"
+		} else {
+			ico = "👁️"
+		}
 		btn := tgbotapi.NewInlineKeyboardButtonData(
-			c.Name,
-			fmt.Sprintf("account:%d", c.ID),
+			fmt.Sprintf("%s %s", c.Name, ico),
+			fmt.Sprintf("%s%d", constHideAccountChange, c.ID),
 		)
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}

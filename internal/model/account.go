@@ -5,4 +5,5 @@ type Account struct {
 	UserID     int64
 	CurrencyID int64
 	Name       string
+	Is_hidden  bool
 }

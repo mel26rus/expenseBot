@@ -22,6 +22,7 @@ func (r *AccountRepo) GetAccountsByUserID(ctx context.Context, userID int64) ([]
 		FROM accounts
 		join currencies on accounts.currency_id = currencies.id
 		WHERE user_id = $1
+			and is_hidden = false
 	`, userID)
 	if err != nil {
 		return []*model.Account{}, err
@@ -33,6 +34,51 @@ func (r *AccountRepo) GetAccountsByUserID(ctx context.Context, userID int64) ([]
 		var a model.Account
 		// slog.Debug("GetAccountsByUserID.Scanning user account row")
 		err := rows.Scan(&a.ID, &a.Name, &a.CurrencyID)
+		// slog.Debug("GetAccountsByUserID.Scanned user account row", "id", a.ID, "name", a.Name, "currencyID", a.CurrencyID, "err", err)
+		if err != nil {
+			return []*model.Account{}, err
+		}
+		// slog.Debug("GetAccountsByUserID.Scanned user account row", "id", a.ID, "name", a.Name, "currencyID", a.CurrencyID)
+		accounts = append(accounts, &a)
+	}
+
+	return accounts, nil
+}
+
+func (r *AccountRepo) GetMenuAccountsByUserID(ctx context.Context, userID int64) ([]*model.Account, error) {
+
+	rows, err := r.db.Query(ctx, `
+		select
+			a.id,
+			a.name || ' Баланс: ' || tb.balance || ' ' || UPPER(c.code)  as title,
+			a.is_hidden
+		from users u
+		join accounts a on u.id = a.user_id 
+		join currencies c on c.id = a.currency_id
+		join transactions t on t.account_id = a.id
+		join ( select t.account_id, t.user_id, sum(t.amount) as balance 
+				from transactions t 
+				group by t.account_id, t.user_id) tb on tb.account_id = t.account_id and t.user_id = u.id
+		where 1=1
+			and u.id = $1
+		group by
+			a.id,
+			a.name,
+			c.code,
+			tb.balance
+		order by
+			a.id;
+	`, userID)
+	if err != nil {
+		return []*model.Account{}, err
+	}
+	defer rows.Close()
+
+	var accounts []*model.Account
+	for rows.Next() {
+		var a model.Account
+		// slog.Debug("GetAccountsByUserID.Scanning user account row")
+		err := rows.Scan(&a.ID, &a.Name, &a.Is_hidden)
 		// slog.Debug("GetAccountsByUserID.Scanned user account row", "id", a.ID, "name", a.Name, "currencyID", a.CurrencyID, "err", err)
 		if err != nil {
 			return []*model.Account{}, err
@@ -89,4 +135,11 @@ func (r *AccountRepo) GetAccountCurrencyByID(ctx context.Context, accountID int6
 	 where id = $1
 	`, accountID).Scan(&currencyId)
 	return currencyId, err
+}
+
+func (r *AccountRepo) ChangeAccountIshidden(ctx context.Context, accountID int64) error {
+	_, err := r.db.Exec(ctx, `
+		update public.accounts set is_hidden = not is_hidden where id = $1
+	`, accountID)
+	return err
 }
