@@ -24,18 +24,18 @@ func (j *DailyReportJob) Name() string {
 
 func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 
-	// next := time.Date(
-	// 	now.Year(),
-	// 	now.Month(),
-	// 	now.Day(),
-	// 	6, 0, 0, 0,
-	// 	now.Location(),
-	// )
+	next := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		6, 0, 0, 0,
+		now.Location(),
+	)
 
-	// if !next.After(now) {
-	// 	next = next.AddDate(0, 0, 1)
-	// }
-	next := now.Add(time.Minute * 1)
+	if !next.After(now) {
+		next = next.AddDate(0, 0, 1)
+	}
+	// next := now.Add(time.Minute * 1)
 	slog.Debug("j.NextRun", "Next", next)
 	return next
 }
