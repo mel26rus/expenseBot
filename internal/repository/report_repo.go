@@ -19,7 +19,7 @@ func NewReportRepo(db *pgxpool.Pool) *ReportRepo {
 
 func (r *ReportRepo) GetAccountTransactions(
 	ctx context.Context,
-	tgId int64,
+	userID int64,
 	DateStart time.Time,
 	DateEnd time.Time,
 ) ([]*model.TransactionsReport, error) {
@@ -32,7 +32,7 @@ func (r *ReportRepo) GetAccountTransactions(
 			SUM(t.amount) AS amount
 		FROM transactions t
 		join users u on u.id = t.user_id 
-		WHERE u.telegram_id = $1
+		WHERE u.id = $1
 		AND t.created_at >= $2
 		AND t.created_at <  $3
 
@@ -45,7 +45,7 @@ func (r *ReportRepo) GetAccountTransactions(
 			t.account_id,
 			amount;
 	`,
-		tgId,
+		userID,
 		DateStart,
 		DateEnd,
 	)
@@ -69,7 +69,7 @@ func (r *ReportRepo) GetAccountTransactions(
 
 func (r *ReportRepo) GetUserAccounts(
 	ctx context.Context,
-	tgId int64,
+	userID int64,
 	StartDate time.Time,
 	EndDate time.Time,
 ) ([]*model.AccountReport, error) {
@@ -100,7 +100,7 @@ func (r *ReportRepo) GetUserAccounts(
 				group by t.account_id, t.user_id) tb on tb.account_id = t.account_id and t.user_id = u.id
 		where t.created_at >= $2
 			and t.created_at < $3
-			and u.telegram_id = $1
+			and u.id = $1
 			and a.is_hidden = false
 		group by
 			a.id,
@@ -110,7 +110,7 @@ func (r *ReportRepo) GetUserAccounts(
 		order by
 			a.id;
 	`,
-		tgId,
+		userID,
 		StartDate,
 		EndDate,
 	)
@@ -132,7 +132,7 @@ func (r *ReportRepo) GetUserAccounts(
 	return accounts, nil
 }
 
-func (r *ReportRepo) GetUsersHasTransactionsTgIDs(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
+func (r *ReportRepo) GetUsersHasTransactions(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]model.User, error) {
 
 	duration := EndDate.Sub(StartDate)
 	days := int(duration.Hours() / 24)
@@ -142,16 +142,17 @@ func (r *ReportRepo) GetUsersHasTransactionsTgIDs(ctx context.Context, StartDate
 	} else {
 		typeReportCondition = ` u.isdailyreport = TRUE `
 	}
+
 	sql := fmt.Sprintf(`
 		SELECT DISTINCT
-			u.telegram_id 
+			u.id, u.telegram_id 
 		FROM transactions t
 		JOIN users u ON u.id = t.user_id
 		WHERE
 			%s
 			AND t.created_at >= $1
 			AND t.created_at < $2
-		ORDER BY u.telegram_id
+		ORDER BY u.id
 		`,
 		typeReportCondition,
 	)
@@ -166,57 +167,17 @@ func (r *ReportRepo) GetUsersHasTransactionsTgIDs(ctx context.Context, StartDate
 	}
 	defer rows.Close()
 
-	var users []int64
+	var users []model.User
 
 	for rows.Next() {
 
-		var id int64
+		var u model.User
 
-		if err := rows.Scan(&id); err != nil {
+		if err := rows.Scan(&u.ID, &u.TelegramID); err != nil {
 			return nil, err
 		}
 
-		users = append(users, id)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return users, nil
-}
-
-func (r *ReportRepo) GetUsersHasTransactionsPeriod(ctx context.Context, StartDate time.Time, EndDate time.Time) ([]int64, error) {
-	rows, err := r.db.Query(ctx, `
-		SELECT DISTINCT
-			t.user_id
-		FROM transactions t
-		JOIN users u ON u.id = t.user_id
-		WHERE
-			u.ismonhtlyreport = TRUE
-			AND t.created_at >= $1
-			AND t.created_at < $2
-		ORDER BY t.user_id
-	`,
-		StartDate,
-		EndDate,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []int64
-
-	for rows.Next() {
-
-		var id int64
-
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-
-		users = append(users, id)
+		users = append(users, u)
 	}
 
 	if err := rows.Err(); err != nil {

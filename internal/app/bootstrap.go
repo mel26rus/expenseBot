@@ -81,12 +81,14 @@ func (a *App) Boot() {
 		sessionService,
 	)
 
+	reportFlow := flow.NewReportFlow(reportService, sessionService, userService)
+
 	mainFlow := flow.NewMainFlow(
 		sessionService,
 		accountFlow,
 		transactionFlow,
-		flow.NewMenuFlow(userService, accountService),
-		flow.NewReportFlow(reportService, sessionService, userService),
+		flow.NewMenuFlow(userService, accountService, reportFlow),
+		reportFlow,
 	)
 	slog.Info("Flows inited")
 

@@ -90,7 +90,7 @@ func buildMenuMainInline() *tgbotapi.InlineKeyboardMarkup {
 func buildMenuReportsInline() *tgbotapi.InlineKeyboardMarkup {
 	ikb := tgbotapi.NewInlineKeyboardMarkup()
 	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("📋 Потрачено сегодня", constMenuTodayReport)))
-	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🧾 Потрачено за месяц", constMenuCurrMonthReport)))
+	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🧾 Потрачено текущий месяц", constMenuCurrMonthReport)))
 	return &ikb
 }
 

@@ -12,15 +12,18 @@ import (
 type MenuFlow struct {
 	userService    *service.UserService
 	accountService *service.AccountService
+	reportFlow     *ReportFlow
 }
 
 func NewMenuFlow(
 	u *service.UserService,
 	a *service.AccountService,
+	r *ReportFlow,
 ) *MenuFlow {
 	return &MenuFlow{
 		userService:    u,
 		accountService: a,
+		reportFlow:     r,
 	}
 }
 

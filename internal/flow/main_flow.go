@@ -2,9 +2,11 @@ package flow
 
 import (
 	"context"
+	"expense-bot/internal/dateutil"
 	"expense-bot/internal/service"
 	"expense-bot/internal/userstate"
 	"log/slog"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -22,6 +24,7 @@ type Response struct {
 	EditMessageId     int64
 	Keyboard          *tgbotapi.InlineKeyboardMarkup
 	IsSendMenuMessage bool
+	IsMainMenu        bool
 }
 
 func NewMainFlow(
@@ -86,6 +89,18 @@ func (f *MainFlow) HandleCallback(ctx context.Context, tgUserID int64, data stri
 		res.Text = restext.Text
 		return res, err
 	}
+	if isReportFlow(data) {
+		typrep := strings.TrimPrefix(data, "rep:")
+		start, end := dateutil.Today()
+		if typrep == "curmonrep" {
+			start, end = dateutil.CurrentMonth()
+		}
+		res, err := f.ReportFlow.BuildUserReport(ctx, session.UserID, start, end)
+		res.IsSendMenuMessage = false
+		res.EditMessageId = session.EditMessageId
+		res.Keyboard = buildMenuReportsInline()
+		return res, err
+	}
 	return f.accountFlow.HandleCallback(ctx, session, data)
 }
 
@@ -114,7 +129,10 @@ func (f *MainFlow) GenerateFirstMessage() (Response, error) {
 
 💡 <i>Просто отправьте сумму или название нового счёта.</i>
 `
-	return Response{Text: messageText, Keyboard: f.buildMenuInline()}, nil
+	return Response{
+		Text:       messageText,
+		Keyboard:   f.buildMenuInline(),
+		IsMainMenu: true}, nil
 
 }
 

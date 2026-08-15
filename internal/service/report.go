@@ -15,23 +15,23 @@ func NewReportService(r *repository.ReportRepo) *ReportService {
 	return &ReportService{repo: r}
 }
 
-func (r *ReportService) GetExistsTxUserTgIDsReport(ctx context.Context, start time.Time, end time.Time) ([]int64, error) {
-	return r.repo.GetUsersHasTransactionsTgIDs(ctx, start, end)
+func (r *ReportService) GetExistsTxUser(ctx context.Context, start time.Time, end time.Time) ([]model.User, error) {
+	return r.repo.GetUsersHasTransactions(ctx, start, end)
 }
 
 func (s *ReportService) BuildUserReport(
 	ctx context.Context,
-	tgID int64,
+	userID int64,
 	start time.Time,
 	end time.Time,
 ) ([]*model.AccountReport, error) {
 
-	accounts, err := s.repo.GetUserAccounts(ctx, tgID, start, end)
+	accounts, err := s.repo.GetUserAccounts(ctx, userID, start, end)
 	if err != nil {
 		return nil, err
 	}
 
-	transactions, err := s.repo.GetAccountTransactions(ctx, tgID, start, end)
+	transactions, err := s.repo.GetAccountTransactions(ctx, userID, start, end)
 	if err != nil {
 		return nil, err
 	}

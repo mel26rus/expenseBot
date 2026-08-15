@@ -30,24 +30,22 @@ func NewReportFlow(
 	}
 }
 
-func (r *ReportFlow) GetExistsTxUserTgIDs(ctx context.Context, startDate time.Time, endDate time.Time) ([]int64, error) {
-	return r.reportService.GetExistsTxUserTgIDsReport(ctx, startDate, endDate)
+func (r *ReportFlow) GetExistsTxUser(ctx context.Context, startDate time.Time, endDate time.Time) ([]model.User, error) {
+	return r.reportService.GetExistsTxUser(ctx, startDate, endDate)
 }
 
-func (r *ReportFlow) BuildUserReport(ctx context.Context, tgID int64, start time.Time, end time.Time) (Response, error) {
+func (r *ReportFlow) BuildUserReport(ctx context.Context, userID int64, start time.Time, end time.Time) (Response, error) {
 
-	user, err := r.userService.GetOrCreate(ctx, tgID)
-	slog.Debug("BuildUserReport_1", "user_id", user.ID, "tguserid", user.TelegramID)
-	session, err := r.sessionService.GetUserSession(ctx, user.ID)
+	session, err := r.sessionService.GetUserSession(ctx, userID)
 	slog.Debug("BuildUserReport_2", "session", session)
 	report, err := r.reportService.BuildUserReport(
 		ctx,
-		user.TelegramID,
+		userID,
 		start,
 		end,
 	)
 	if err != nil {
-		slog.Error("reportService.BuildDailyReport", "Error", err)
+		slog.Error("reportService.BuildUserReport", "Error", err)
 		return Response{}, err
 	}
 
@@ -71,7 +69,7 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 		sb.WriteString(
 			fmt.Sprintf(
 				"📅 <b>Отчет за %s</b>\n",
-				time.Now().AddDate(0, 0, -1).Format("02.01.2006"),
+				start.Format("02.01.2006"),
 			),
 		)
 	} else {

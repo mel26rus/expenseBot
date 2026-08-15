@@ -67,9 +67,9 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 	}
 	slog.Debug(fn_name, "response.text", response.Text, "response.editmessageid", response.EditMessageId)
 
-	if response.EditMessageId != 0 && !response.IsSendMenuMessage {
+	if response.EditMessageId != 0 && !response.IsSendMenuMessage && !response.IsMainMenu {
 		editMessage := tgbotapi.NewEditMessageText(msg.Chat.ID, int(response.EditMessageId), response.Text)
-		if response.Keyboard != nil && !response.IsSendMenuMessage {
+		if response.Keyboard != nil && !response.IsMainMenu {
 			h.appendCancelButton(response.Keyboard)
 			editMessage.ReplyMarkup = response.Keyboard
 		}
@@ -90,7 +90,7 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 
 	} else {
 		editMessage := tgbotapi.NewEditMessageText(msg.Chat.ID, int(response.EditMessageId), response.Text)
-		if response.Keyboard != nil && !response.IsSendMenuMessage {
+		if response.Keyboard != nil && !response.IsMainMenu {
 			h.appendCancelButton(response.Keyboard)
 			editMessage.ReplyMarkup = response.Keyboard
 		}
@@ -150,12 +150,10 @@ func (h *Handler) handleCallback(cb *tgbotapi.CallbackQuery) {
 	slog.Debug("flow handle callback success", "response.text", response.Text, " cb.Message.MessageID", cb.Message.MessageID, "response.keyboard", response.Keyboard)
 	h.flow.SetUserSessionMessageId(context.Background(), cb.From.ID, int64(cb.Message.MessageID))
 	msg := tgbotapi.NewEditMessageText(cb.Message.Chat.ID, cb.Message.MessageID, response.Text)
-
-	if response.Keyboard != nil && !response.IsSendMenuMessage {
+	if response.Keyboard != nil && !response.IsMainMenu {
 		h.appendCancelButton(response.Keyboard)
-		msg.ReplyMarkup = response.Keyboard
 	}
-
+	msg.ReplyMarkup = response.Keyboard
 	msg.ParseMode = "HTML"
 	_, err = h.bot.Request(msg)
 	if err != nil {
@@ -190,21 +188,21 @@ func (h *Handler) HandleMonthlyReports(ctx context.Context) {
 }
 
 func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Time) {
-	usersTgIDs, err := h.flow.ReportFlow.GetExistsTxUserTgIDs(ctx, start, end)
+	users, err := h.flow.ReportFlow.GetExistsTxUser(ctx, start, end)
 	if err != nil {
 		slog.Error("HandleDailyReports", "Error", err)
 	}
 
-	for _, userTgID := range usersTgIDs {
+	for _, user := range users {
 		var res flow.Response
-		res, err = h.flow.ReportFlow.BuildUserReport(ctx, userTgID, start, end)
-		slog.Debug("SendReports_1 Deleting message", "userTgID", userTgID, "EditMessageId", res.EditMessageId)
-		delMessage := tgbotapi.NewDeleteMessage(userTgID, int(res.EditMessageId))
-		_, err = h.bot.Send(delMessage)
+		res, err = h.flow.ReportFlow.BuildUserReport(ctx, user.ID, start, end)
+		slog.Debug("SendReports_1 Deleting message", "user.ID", user.ID, "EditMessageId", res.EditMessageId)
+		delMessage := tgbotapi.NewDeleteMessage(user.TelegramID, int(res.EditMessageId))
+		_, err = h.bot.Request(delMessage)
 		if err != nil {
-			slog.Error("HandleDailyReports.Send delMessage", "Error", err)
+			slog.Error("HandleDailyReports.Request delMessage", "Error", err)
 		}
-		msg := tgbotapi.NewMessage(userTgID, res.Text)
+		msg := tgbotapi.NewMessage(user.TelegramID, res.Text)
 		msg.ParseMode = tgbotapi.ModeHTML
 		_, err = h.bot.Send(msg)
 		if err != nil {
@@ -212,7 +210,7 @@ func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Tim
 		}
 		if res.IsSendMenuMessage {
 			res, _ := h.flow.GenerateFirstMessage()
-			menuMessage := tgbotapi.NewMessage(userTgID, res.Text)
+			menuMessage := tgbotapi.NewMessage(user.TelegramID, res.Text)
 			menuMessage.ReplyMarkup = res.Keyboard
 			menuMessage.ParseMode = tgbotapi.ModeHTML
 			sendedMessage, err := h.bot.Send(menuMessage)
@@ -220,7 +218,7 @@ func (h *Handler) sendReports(ctx context.Context, start time.Time, end time.Tim
 				slog.Error("MainFlow.SendReports_2 error_4", "error", err)
 			}
 			slog.Debug("HandleDailyReports end", "response.IsSendMenuMessage", res.IsSendMenuMessage, "sendedMessage.MessageID", sendedMessage.MessageID)
-			h.flow.SetUserSessionMessageId(context.Background(), userTgID, int64(sendedMessage.MessageID))
+			h.flow.SetUserSessionMessageId(context.Background(), user.TelegramID, int64(sendedMessage.MessageID))
 		}
 
 	}

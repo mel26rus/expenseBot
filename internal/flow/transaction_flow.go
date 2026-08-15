@@ -122,7 +122,7 @@ func (f *TransactionFlow) HandleMessage(ctx context.Context, session model.Sessi
 
 func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Session, data string) (Response, error) {
 
-	slog.Debug("TransactionFlow.HandleCallback: Got callback", "tgUserID", session.UserID, "data", data)
+	slog.Debug("TransactionFlow.HandleCallback: Got callback", "UserID", session.UserID, "data", data)
 
 	var payload model.TxPayload
 	json.Unmarshal(session.Payload, &payload)

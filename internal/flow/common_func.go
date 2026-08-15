@@ -19,10 +19,11 @@ const constDataMenuSettings = "menu:settings"
 const constDailyReportChange = "menu:dailyreport"
 const constMonthlyReportChange = "menu:monthlyreport"
 const constMenuReports = "menu:reports"
-const constMenuTodayReport = "menu:todayreport"
-const constMenuCurrMonthReport = "menu:curmonrep"
+const constMenuTodayReport = "rep:todayrep"
+const constMenuCurrMonthReport = "rep:curmonrep"
 const constMenuAccounts = "menu:accounts"
 const constHideAccountChange = "menu:acchide"
+const ConstCancel = "cancel"
 
 func formatAmount(a float64) string {
 	if a == float64(int64(a)) {
@@ -76,6 +77,10 @@ func isTransactionState(state string) bool {
 
 func isMenuFlow(data string) bool {
 	return strings.Contains(data, "menu:")
+}
+
+func isReportFlow(data string) bool {
+	return strings.Contains(data, "rep:")
 }
 
 func parseCurrencyName(text string) (string, bool) {
