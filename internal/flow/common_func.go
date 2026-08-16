@@ -22,6 +22,8 @@ const constMenuReports = "menu:reports"
 const constMenuTodayReport = "rep:todayrep"
 const constMenuCurrMonthReport = "rep:curmonrep"
 const constMenuAccounts = "menu:accounts"
+const constMenuLastTx = "menu:ltx"
+const constMenuDelTx = "menu:dtx"
 const constHideAccountChange = "menu:acchide"
 const ConstCancel = "cancel"
 
@@ -103,18 +105,18 @@ func parseCurrencyName(text string) (string, bool) {
 
 func (f *TransactionFlow) generateFinalTxMessage(ctx context.Context, payload model.TxPayload, balance float64) string {
 	//💰💸
-	icon := "📥"
+	first_line := "📥 <b>Пополнение выполнено</b>"
 	if payload.Amount < 0 {
-		icon = "📤"
+		first_line = "📤 <b>Списание выполнено</b>"
 	}
 	messageText := fmt.Sprintf(`
-%s <b>Транзакция выполнена</b>
+%s
 💸 <b>Сумма:</b> <code>%s</code>
 🏦 <b>Счёт:</b> %s
-📝 <b>Описание:</b> %s
+📝 <b>Описание:</b> <code>%s</code>
 💰 <b>Баланс:</b> <code>%s</code>
 `,
-		icon,
+		first_line,
 		formatAmount(payload.Amount),
 		f.accountService.GetAccountTitle(ctx, payload.AccountID),
 		payload.Comment,

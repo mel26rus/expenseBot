@@ -36,7 +36,7 @@ func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 		next = next.AddDate(0, 0, 1)
 	}
 	// next := now.Add(time.Minute * 1)
-	slog.Debug("j.NextRun", "Next", next)
+	slog.Debug("j.NextRun", "name", j.Name(), "Next", next)
 	return next
 }
 

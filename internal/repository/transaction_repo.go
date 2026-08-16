@@ -86,3 +86,43 @@ func (r *TransactionRepo) GetCommentByTxID(ctx context.Context, txID int64) (str
 	}
 	return result, nil
 }
+
+func (r *TransactionRepo) GetLastUserTx(ctx context.Context, userID int64) ([]*model.Transaction, error) {
+	rows, err := r.db.Query(ctx, `
+		select
+			t.id,
+			'💳 ' || a."name" || CASE WHEN t.comment IS NOT NULL AND t.comment != '' THEN ' 💬 ' || t.comment ELSE '' END as title,
+			t.amount 
+		from
+			transactions t
+			join accounts a on a.id = t.account_id 
+		where
+			t.user_id = $1
+			and t.tx_guid is null
+		order by
+			id desc
+		limit 5
+	`, userID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*model.Transaction
+
+	for rows.Next() {
+		var t model.Transaction
+		rows.Scan(&t.ID, &t.Comment, &t.Amount)
+		result = append(result, &t)
+	}
+
+	return result, nil
+}
+
+func (r *TransactionRepo) DeleteTx(ctx context.Context, txID int64) error {
+	_, err := r.db.Exec(ctx, `
+		delete from transactions where id = $1
+	`, txID)
+	return err
+}

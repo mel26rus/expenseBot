@@ -56,6 +56,7 @@ func (a *App) Boot() {
 	currencyRepo := repository.NewCurrencyRepo(a.DB)
 	transactionRepo := repository.NewTransactionRepo(a.DB)
 	reportRepo := repository.NewReportRepo(a.DB)
+	exchangeRateRepo := repository.NewExchangeRateRepo(a.DB)
 	slog.Info("Rpositories inited")
 	// services
 	userService := service.NewUserService(userRepo)
@@ -64,6 +65,7 @@ func (a *App) Boot() {
 	currencyService := service.NewCurrencyService(currencyRepo)
 	transactionService := service.NewTransactionService(transactionRepo)
 	reportService := service.NewReportService(reportRepo)
+	exchangeRateService := service.NewExchangeRateService(exchangeRateRepo)
 	slog.Info("Services inited")
 	// flow
 
@@ -82,12 +84,13 @@ func (a *App) Boot() {
 	)
 
 	reportFlow := flow.NewReportFlow(reportService, sessionService, userService)
+	menuFlow := flow.NewMenuFlow(userService, accountService, reportFlow, transactionService)
 
 	mainFlow := flow.NewMainFlow(
 		sessionService,
 		accountFlow,
 		transactionFlow,
-		flow.NewMenuFlow(userService, accountService, reportFlow),
+		menuFlow,
 		reportFlow,
 	)
 	slog.Info("Flows inited")
@@ -106,6 +109,10 @@ func (a *App) Boot() {
 
 	sch.Add(
 		scheduler.NewMonthlyReportJob(reportHandler),
+	)
+
+	sch.Add(
+		scheduler.NewGetRatesJob(currencyService, exchangeRateService),
 	)
 
 	a.Scheduler = sch

@@ -35,3 +35,11 @@ func (s *TransactionService) GetLastComments(ctx context.Context, userID int64, 
 func (s *TransactionService) GetCommentByTxID(ctx context.Context, txID int64) (string, error) {
 	return s.repo.GetCommentByTxID(ctx, txID)
 }
+
+func (s *TransactionService) GetLastUserTx(ctx context.Context, userID int64) ([]*model.Transaction, error) {
+	return s.repo.GetLastUserTx(ctx, userID)
+}
+
+func (s *TransactionService) DeleteTx(ctx context.Context, txID int64) error {
+	return s.repo.DeleteTx(ctx, txID)
+}

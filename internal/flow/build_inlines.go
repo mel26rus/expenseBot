@@ -84,6 +84,7 @@ func buildMenuMainInline() *tgbotapi.InlineKeyboardMarkup {
 	ikb := tgbotapi.NewInlineKeyboardMarkup()
 	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("📋 Отчеты", constMenuReports)))
 	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("🧾 Счета", constMenuAccounts)))
+	ikb.InlineKeyboard = append(ikb.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("💶 Последние транзакции", constMenuLastTx)))
 	return &ikb
 }
 
@@ -107,6 +108,19 @@ func buildMenuUserAccountsInline(list []*model.Account) *tgbotapi.InlineKeyboard
 		btn := tgbotapi.NewInlineKeyboardButtonData(
 			fmt.Sprintf("%s %s", c.Name, ico),
 			fmt.Sprintf("%s%d", constHideAccountChange, c.ID),
+		)
+		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
+	}
+	ikb := tgbotapi.NewInlineKeyboardMarkup(rows...)
+	return &ikb
+}
+
+func buildMenuLastTxInline(list []*model.Transaction) *tgbotapi.InlineKeyboardMarkup {
+	var rows [][]tgbotapi.InlineKeyboardButton
+	for _, t := range list {
+		btn := tgbotapi.NewInlineKeyboardButtonData(
+			fmt.Sprintf("🗑️ %s: %s", t.Comment, formatAmount(t.Amount)),
+			fmt.Sprintf("%s%d", constMenuDelTx, t.ID),
 		)
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}

@@ -10,20 +10,23 @@ import (
 )
 
 type MenuFlow struct {
-	userService    *service.UserService
-	accountService *service.AccountService
-	reportFlow     *ReportFlow
+	userService        *service.UserService
+	accountService     *service.AccountService
+	reportFlow         *ReportFlow
+	transactionService *service.TransactionService
 }
 
 func NewMenuFlow(
 	u *service.UserService,
 	a *service.AccountService,
 	r *ReportFlow,
+	t *service.TransactionService,
 ) *MenuFlow {
 	return &MenuFlow{
-		userService:    u,
-		accountService: a,
-		reportFlow:     r,
+		userService:        u,
+		accountService:     a,
+		reportFlow:         r,
+		transactionService: t,
 	}
 }
 
@@ -46,6 +49,9 @@ func (m *MenuFlow) HandleCallback(ctx context.Context, session model.Session, da
 	case constMenuAccounts:
 		accList, err := m.accountService.GetMenuAccountsByUserID(ctx, session.UserID)
 		return Response{Keyboard: buildMenuUserAccountsInline(accList)}, err
+	case constMenuLastTx:
+		txList, err := m.transactionService.GetLastUserTx(ctx, session.UserID)
+		return Response{Keyboard: buildMenuLastTxInline(txList)}, err
 	default:
 		if strings.HasPrefix(data, constHideAccountChange) {
 			accountIDStr := strings.TrimPrefix(data, constHideAccountChange)
@@ -59,6 +65,20 @@ func (m *MenuFlow) HandleCallback(ctx context.Context, session model.Session, da
 			}
 			accList, err := m.accountService.GetMenuAccountsByUserID(ctx, session.UserID)
 			return Response{Keyboard: buildMenuUserAccountsInline(accList)}, err
+		}
+		if strings.HasPrefix(data, constMenuDelTx) {
+			//todo delete userTx
+			txIdStr := strings.TrimPrefix(data, constMenuDelTx)
+			txId, err := strconv.ParseInt(txIdStr, 10, 64)
+			if err != nil {
+				return Response{}, err
+			}
+			err = m.transactionService.DeleteTx(ctx, txId)
+			if err != nil {
+				return Response{}, err
+			}
+			txList, err := m.transactionService.GetLastUserTx(ctx, session.UserID)
+			return Response{Keyboard: buildMenuLastTxInline(txList)}, err
 		}
 		return Response{}, nil
 	}
