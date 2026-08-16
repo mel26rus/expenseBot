@@ -104,21 +104,19 @@ func parseCurrencyName(text string) (string, bool) {
 }
 
 func (f *TransactionFlow) generateFinalTxMessage(ctx context.Context, payload model.TxPayload, balance float64) string {
-	//💰💸
-	first_line := "📥 <b>Пополнение выполнено</b>"
+	first_line := "💰 <b>Пополнение</b>"
 	if payload.Amount < 0 {
-		first_line = "📤 <b>Списание выполнено</b>"
+		first_line = "💸 <b>Списание с</b> "
 	}
 	messageText := fmt.Sprintf(`
-%s
-💸 <b>Сумма:</b> <code>%s</code>
-🏦 <b>Счёт:</b> %s
-📝 <b>Описание:</b> <code>%s</code>
-💰 <b>Баланс:</b> <code>%s</code>
+%s %s
+• <b>Сумма:</b> <code>%s</code>
+• <b>Описание:</b> <code>%s</code>
+👛 <b>Остаток на счете:</b> <code>%s</code>
 `,
 		first_line,
-		formatAmount(payload.Amount),
 		f.accountService.GetAccountTitle(ctx, payload.AccountID),
+		formatAmount(payload.Amount),
 		payload.Comment,
 		formatAmount(balance),
 	)
