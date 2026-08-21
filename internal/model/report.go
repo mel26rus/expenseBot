@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type UserReport struct {
 	UserID        int64
 	TgUserID      int64
@@ -14,6 +16,11 @@ type AccountReport struct {
 	Income             float64
 	Expense            float64
 	TransactionsReport []*TransactionsReport
+	CurrencyName       string
+	ExRate             float64
+	ExDate             time.Time
+	USDBalance         float64
+	RUBBalance         float64
 }
 
 type TransactionsReport struct {

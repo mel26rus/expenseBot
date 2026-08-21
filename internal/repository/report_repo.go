@@ -35,12 +35,10 @@ func (r *ReportRepo) GetAccountTransactions(
 		WHERE u.id = $1
 		AND t.created_at >= $2
 		AND t.created_at <  $3
-
 		GROUP BY
 			1,
 			2,
 			3
-
 		ORDER BY
 			t.account_id,
 			amount;
@@ -77,8 +75,13 @@ func (r *ReportRepo) GetUserAccounts(
 	rows, err := r.db.Query(ctx, `
 		select
 			a.id,
-			a.name || ' (' || UPPER(c.code) || ')' as title,
+			a.name,
+			c.code,
 			tb.balance,
+			er.value,
+			er.date,
+			(tb.balance * c.multiple) / er.value as usd_bal,
+			((tb.balance * c.multiple) / er.value) * er_rub.value as rub_bal,
 			coalesce(SUM(t.amount)
 				filter (
 					where t.created_at >= $2
@@ -98,17 +101,23 @@ func (r *ReportRepo) GetUserAccounts(
 		join (  select t.account_id, t.user_id, sum(t.amount) as balance 
 				from transactions t 
 				group by t.account_id, t.user_id) tb on tb.account_id = t.account_id and t.user_id = u.id
+		left join (select name, value, date from exchange_rates er where er."date" = (select MAX(date) from exchange_rates er)) er on er.name = c.code		
+		left join (select name, value, date from exchange_rates er where er."date" = (select MAX(date) from exchange_rates er) and name = 'RUB') er_rub on er.name = c.code
 		where t.created_at >= $2
 			and t.created_at < $3
 			and u.id = $1
-			and a.is_hidden = false
+			--and a.is_hidden = false
 		group by
 			a.id,
 			a.name,
 			c.code,
-			tb.balance
+			tb.balance,
+			er.value,
+			er.date,
+			c.multiple,
+			er_rub.value
 		order by
-			a.id;
+			a.id;	
 	`,
 		userID,
 		StartDate,
@@ -122,7 +131,7 @@ func (r *ReportRepo) GetUserAccounts(
 	var accounts []*model.AccountReport
 	for rows.Next() {
 		var ac model.AccountReport
-		err := rows.Scan(&ac.AccountId, &ac.Title, &ac.Balance, &ac.Income, &ac.Expense)
+		err := rows.Scan(&ac.AccountId, &ac.Title, &ac.CurrencyName, &ac.Balance, &ac.ExRate, &ac.ExDate, &ac.USDBalance, &ac.RUBBalance, &ac.Income, &ac.Expense)
 		if err != nil {
 			return nil, err
 		}

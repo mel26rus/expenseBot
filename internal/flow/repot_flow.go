@@ -83,19 +83,17 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 		)
 	}
 
+	var totRUBAmount float64 = 0.00
+	var totUSDAmount float64 = 0.00
+	var erDate time.Time
+	var exRate float64 = 0.00
 	for _, account := range report {
 
 		sb.WriteString(
 			fmt.Sprintf(
-				"💳 <b>%s</b>\n",
+				"💳 <b>%s</b> %s\n",
 				account.Title,
-			),
-		)
-
-		sb.WriteString(
-			fmt.Sprintf(
-				"💰 Баланс: <code>%s</code>\n",
-				formatAmount(account.Balance),
+				account.CurrencyName,
 			),
 		)
 
@@ -144,7 +142,7 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 
 			sb.WriteString(
 				fmt.Sprintf(
-					"📈 Доход: <b>%s</b>\n",
+					"📈 Итого доход: <b>%s</b>\n",
 					formatAmount(account.Income),
 				),
 			)
@@ -154,15 +152,65 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 
 			sb.WriteString(
 				fmt.Sprintf(
-					"📉 Расход: <b>%s</b>\n",
+					"📉 Итого расход: <b>%s</b>\n",
 					formatAmount(account.Expense),
 				),
 			)
 		}
 
-		sb.WriteString("\n────────────────────\n\n")
+		sb.WriteString(
+			fmt.Sprintf(
+				"💰 Баланс: <code>%s</code> %s\n",
+				formatAmount(account.Balance),
+				account.CurrencyName,
+			),
+		)
+
+		// if (account.CurrencyName != "USD") && (account.CurrencyName != "USDT") {
+		// 	sb.WriteString(
+		// 		fmt.Sprintf(
+		// 			"💰 Баланс: <code>%s</code> USD\n",
+		// 			formatAmount(account.USDBalance),
+		// 		),
+		// 	)
+		// }
+
+		// if account.CurrencyName != "RUB" {
+		// 	sb.WriteString(
+		// 		fmt.Sprintf(
+		// 			"💰 Баланс: <code>%s</code> RUB\n",
+		// 			formatAmount(account.RUBBalance),
+		// 		),
+		// 	)
+		// }
+		if account.CurrencyName == "RUB" {
+			exRate = account.ExRate
+		}
+		totRUBAmount = totRUBAmount + account.RUBBalance
+		totUSDAmount = totUSDAmount + account.USDBalance
+		erDate = account.ExDate
+		sb.WriteString("────────────────────\n")
 	}
 
+	sb.WriteString(
+		fmt.Sprintf(
+			"USD/RUB от %s: <code>%s</code> \n",
+			erDate.Format("02.01.2006"),
+			formatAmount(exRate),
+		),
+	)
+	sb.WriteString(
+		fmt.Sprintf(
+			"💰 Общий: <code>%s</code> RUB\n",
+			formatAmount(totRUBAmount),
+		),
+	)
+	sb.WriteString(
+		fmt.Sprintf(
+			"💰 Общий: <code>%s</code> USD\n",
+			formatAmount(totUSDAmount),
+		),
+	)
 	return sb.String()
 }
 
