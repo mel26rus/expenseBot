@@ -6,6 +6,7 @@ import (
 	"expense-bot/internal/service"
 	"fmt"
 	"log/slog"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -88,108 +89,94 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 	var erDate time.Time
 	var exRate float64 = 0.00
 	for _, account := range report {
+		sm := account.Income + math.Abs(account.Expense)
+		if sm > 0 {
 
-		sb.WriteString(
-			fmt.Sprintf(
-				"💳 <b>%s</b> %s\n",
-				account.Title,
-				account.CurrencyName,
-			),
-		)
+			sb.WriteString(
+				fmt.Sprintf(
+					"💳 <b>%s</b> %s\n",
+					account.Title,
+					account.CurrencyName,
+				),
+			)
 
-		hasIncome := false
-		hasExpense := false
+			hasIncome := false
+			hasExpense := false
 
-		for _, tx := range account.TransactionsReport {
+			for _, tx := range account.TransactionsReport {
 
-			if tx.Amount > 0 {
+				if tx.Amount > 0 {
 
-				if !hasIncome {
-					sb.WriteString("📈 <b>Доходы</b>\n")
-					hasIncome = true
+					if !hasIncome {
+						sb.WriteString("📈 <b>Доходы</b>\n")
+						hasIncome = true
+					}
+
+					sb.WriteString(
+						fmt.Sprintf(
+							"• %-18s <b>+%s</b>\n",
+							emoji(tx.Category)+capitalize(tx.Category),
+							formatAmount(tx.Amount),
+						),
+					)
+
+				} else {
+
+					if !hasExpense {
+						sb.WriteString("📉 <b>Расходы</b>\n")
+						hasExpense = true
+					}
+
+					text := fmt.Sprintf(
+						"• %-18s <b>%s</b>\n",
+						emoji(tx.Category)+capitalize(tx.Category),
+						formatAmount(-tx.Amount),
+					)
+
+					sb.WriteString(
+						text,
+					)
 				}
+			}
+
+			//	sb.WriteString("\n")
+
+			if account.Income > 0 {
 
 				sb.WriteString(
 					fmt.Sprintf(
-						"• %-18s <b>+%s</b>\n",
-						emoji(tx.Category)+capitalize(tx.Category),
-						formatAmount(tx.Amount),
+						"📈 Итого доход: <b>%s</b>\n",
+						formatAmount(account.Income),
 					),
 				)
+			}
 
-			} else {
-
-				if !hasExpense {
-					sb.WriteString("📉 <b>Расходы</b>\n")
-					hasExpense = true
-				}
-
-				text := fmt.Sprintf(
-					"• %-18s <b>%s</b>\n",
-					emoji(tx.Category)+capitalize(tx.Category),
-					formatAmount(-tx.Amount),
-				)
+			if account.Expense > 0 {
 
 				sb.WriteString(
-					text,
+					fmt.Sprintf(
+						"📉 Итого расход: <b>%s</b>\n",
+						formatAmount(account.Expense),
+					),
 				)
 			}
-		}
-
-		//	sb.WriteString("\n")
-
-		if account.Income > 0 {
 
 			sb.WriteString(
 				fmt.Sprintf(
-					"📈 Итого доход: <b>%s</b>\n",
-					formatAmount(account.Income),
+					"💰 Баланс: <code>%s</code> %s\n",
+					formatAmount(account.Balance),
+					account.CurrencyName,
 				),
 			)
+			sb.WriteString("────────────────────\n")
 		}
 
-		if account.Expense > 0 {
-
-			sb.WriteString(
-				fmt.Sprintf(
-					"📉 Итого расход: <b>%s</b>\n",
-					formatAmount(account.Expense),
-				),
-			)
-		}
-
-		sb.WriteString(
-			fmt.Sprintf(
-				"💰 Баланс: <code>%s</code> %s\n",
-				formatAmount(account.Balance),
-				account.CurrencyName,
-			),
-		)
-
-		// if (account.CurrencyName != "USD") && (account.CurrencyName != "USDT") {
-		// 	sb.WriteString(
-		// 		fmt.Sprintf(
-		// 			"💰 Баланс: <code>%s</code> USD\n",
-		// 			formatAmount(account.USDBalance),
-		// 		),
-		// 	)
-		// }
-
-		// if account.CurrencyName != "RUB" {
-		// 	sb.WriteString(
-		// 		fmt.Sprintf(
-		// 			"💰 Баланс: <code>%s</code> RUB\n",
-		// 			formatAmount(account.RUBBalance),
-		// 		),
-		// 	)
-		// }
 		if account.CurrencyName == "RUB" {
 			exRate = account.ExRate
 		}
 		totRUBAmount = totRUBAmount + account.RUBBalance
 		totUSDAmount = totUSDAmount + account.USDBalance
 		erDate = account.ExDate
-		sb.WriteString("────────────────────\n")
 	}
 
 	sb.WriteString(
