@@ -44,7 +44,7 @@ func (a *App) Boot() {
 			panic(err)
 		}
 	}
-	slog.Info("Bot", "Авторизован под аккаунтом: ", a.botAPI.Self.UserName)
+	slog.Info("Bot", "Авторизован под аккаунтом", a.botAPI.Self.UserName)
 	slog.Info("botApi inited")
 	// repos
 	userRepo := repository.NewUserRepo(a.DB)
