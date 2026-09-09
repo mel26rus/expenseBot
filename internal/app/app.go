@@ -27,6 +27,7 @@ func (a *App) Run(ctx context.Context) {
 	a.Logger.Debug("+App.boot")
 	a.Boot()
 	a.Logger.Debug("-App.boot")
+	a.Logger.Debug("Pre Run Scheduler", "ctx", ctx)
 	go a.Scheduler.Run(ctx)
 	slog.Info("Scheduler started")
 
