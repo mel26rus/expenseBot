@@ -7,3 +7,4 @@
 /db_bak
 vpn-config.json
 *.txt
+/awg_conf

@@ -1,13 +1,60 @@
 services:
+  vpn:
+    image: amneziavpn/amneziawg-go:latest
+    container_name: amnezia-vpn
+    privileged: true 
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./awg_conf/wg0.conf:/etc/amnezia/amneziawg/amneziawg0.conf:ro
+    entrypoint: ""
+    # Добавлены команды `ip route add` для принудительного направления Telegram в VPN
+    command: >
+      sh -c "
+      apk add --no-cache openresolv iptables &&
+      ln -sf /bin/true /sbin/ip6tables &&
+      ln -sf /bin/true /sbin/ip6tables-restore &&
+      awg-quick up amneziawg0 &&
+      ip route add 149.154.160.0/20 dev amneziawg0 &&
+      ip route add 91.108.4.0/22 dev amneziawg0 &&
+      iptables -t nat -A POSTROUTING -o amneziawg0 -j MASQUERADE &&
+      echo 'VPN интерфейс успешно поднят и настроен!' &&
+      tail -f /dev/null
+      "
+    networks:
+      - bot-network
+    restart: unless-stopped
+
+  # 2. Прокси, который заглядывает внутрь VPN-контейнера
+  vpn-proxy:
+    image: serjs/go-socks5-proxy:latest
+    container_name: amnezia-socks5-proxy
+    network_mode: "container:amnezia-vpn" # Подключаемся напрямую к сети VPN
+    environment:
+      - REQUIRE_AUTH=false
+    depends_on:
+      - vpn
+    restart: unless-stopped
+
+  # 3. Ваш бот
   bot:
     build: .
     container_name: expense-bot
-    #network_mode: "host" # Бот использует сеть хоста напрямую  
     volumes:
       - ./config.yaml:/app/config.yaml
       - ./logs:/app/logs
     environment:
       - TZ=Europe/Moscow
-    #restart: unless-stopped
-    extra_hosts:
-      - "api.telegram.org:149.154.167.220"
+      # Указываем боту использовать наш прокси (адресом служит имя vpn-контейнера)
+      - TELEGRAM_PROXY=socks5://vpn:1080
+      - HTTP_PROXY=socks5://vpn:1080
+      - HTTPS_PROXY=socks5://vpn:1080
+    networks:
+      - bot-network
+    depends_on:
+      - vpn
+    restart: unless-stopped
+
+networks:
+  bot-network:
+    driver: bridge
