@@ -6,7 +6,6 @@ import (
 	"expense-bot/internal/repository"
 	"expense-bot/internal/scheduler"
 	"expense-bot/internal/service"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -33,21 +32,19 @@ func (a *App) Boot() {
 
 		bot, err := tgbotapi.NewBotAPIWithClient(a.Config.BotKey, tgbotapi.APIEndpoint, client)
 		if err != nil {
-			log.Panic(err)
-			return
+			panic(err)
 		}
-
 		bot.Debug = true
-		slog.Info("Bot", "Авторизован под аккаунтом %s", bot.Self.UserName)
+		a.botAPI = bot
 	} else {
 		var err error
 		a.botAPI, err = tgbotapi.NewBotAPI(a.Config.BotKey)
 		if err != nil {
 			a.Logger.Error("bot init failed", "error", err)
-			return
+			panic(err)
 		}
 	}
-
+	slog.Info("Bot", "Авторизован под аккаунтом", a.botAPI.Self.UserName)
 	slog.Info("botApi inited")
 	// repos
 	userRepo := repository.NewUserRepo(a.DB)

@@ -32,6 +32,11 @@ func (s *Scheduler) Add(job Job) {
 func (s *Scheduler) Run(ctx context.Context) {
 
 	slog.Debug("Scheduler Run")
+	if s.jobs == nil {
+		slog.Debug("test", "jobs", nil)
+	} else {
+		slog.Debug("test", "jobs", s.jobs)
+	}
 
 	for {
 
