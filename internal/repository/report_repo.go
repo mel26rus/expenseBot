@@ -10,45 +10,46 @@ import (
 )
 
 const CONST_USER_ACCOUNTS = `
-with balance as (
-select t.account_id, sum(amount) bal from transactions t group by account_id
-),
-exrates as (
-select name, value as val, date as rate_date from exchange_rates er where er."date" = (select MAX(date) from exchange_rates er)
-),
-ex_custom as (
-select name, val from exrates where "name" = 'RUB' --заменить на users.cust_bal
-),
-tx as (
-select t.account_id,
-sum(case when t.amount > 0 then t.amount else 0 end) income,
-sum(case when t.amount < 0 then t.amount else 0 end) expence
-from transactions t
-where 1=1
-	and t.tx_guid is null
-	and t.created_at >= $2 
-	and t.created_at < $3
-group by 1
-)
-select 
-	a.id,
-	a."name" acc_name, 
-	c.code curr_name, 
-	b.bal, 
-	ex.val as ex_val, 
-	ex.rate_date,
-	(b.bal*c.multiple)/ex.val as usd_bal,
-	((b.bal*c.multiple)/ex.val) * ex_custom.val as cust_bal,
-	coalesce(tx.income,0.0) as income,
-	coalesce(tx.expence, 0.0) as expence 
-from users u 
-join accounts a on u.id = a.user_id 
-join currencies c on c.id = a.currency_id 
-join balance b on b.account_id = a.id 
-join exrates ex on ex."name" = c.code  
-left join tx on tx.account_id = a.id 
-cross join ex_custom 
-where u.id = $1
+	with balance as (
+	select t.account_id, t.user_id, sum(amount) bal from transactions t group by account_id, user_id
+	),
+	exrates as (
+	select name, value as val, date as rate_date from exchange_rates er where er."date" = (select MAX(date) from exchange_rates er)
+	),
+	ex_custom as (
+	select name, val from exrates where "name" = 'RUB' --заменить на users.cust_bal
+	),
+	tx as (
+	select t.account_id, t.user_id, 
+	sum(case when t.amount > 0 and t.tx_guid is null then t.amount else 0 end) income,
+	sum(case when t.amount < 0 and t.tx_guid is null then t.amount else 0 end) expence,
+	sum(case when t.tx_guid is not null then t.amount else 0 end) transfers
+	from transactions t
+	where 1=1
+		and t.created_at >= $2 
+		and t.created_at < $3
+	group by 1, 2
+	)
+	select 
+		a.id,
+		a."name" acc_name, 
+		c.code curr_name, 
+		b.bal, 
+		ex.val as ex_val, 
+		ex.rate_date,
+		(b.bal*c.multiple)/ex.val as usd_bal,
+		((b.bal*c.multiple)/ex.val) * ex_custom.val as cust_bal,
+		coalesce(tx.income,0.0) as income,
+		coalesce(tx.expence, 0.0) as expence,
+		coalesce(tx.transfers, 0.0) as transfers
+	from users u 
+	join accounts a on u.id = a.user_id 
+	join currencies c on c.id = a.currency_id 
+	join balance b on b.account_id = a.id and u.id = b.user_id 
+	join exrates ex on ex."name" = c.code  
+	left join tx on tx.account_id = a.id and u.id = tx.user_id
+	cross join ex_custom 
+	where u.id = $1
 `
 
 const CONST_USER_ACCOUNTS_OLD = `
@@ -125,6 +126,7 @@ func (r *ReportRepo) GetAccountTransactions(
 		WHERE u.id = $1
 		AND t.created_at >= $2
 		AND t.created_at <  $3
+		and t.tx_guid is null
 		GROUP BY
 			1,
 			2,
