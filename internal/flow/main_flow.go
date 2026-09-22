@@ -62,7 +62,6 @@ func (f *MainFlow) HandleMessage(ctx context.Context, tgUserID int64, text strin
 		}
 		slog.Debug("MainFlow.HandleMessage: StateIdle but not amount", "tgUserID", tgUserID, "text", text)
 		return f.accountFlow.Start(ctx, session, text)
-
 	default:
 		slog.Debug("MainFlow.HandleMessage: State is default", "tgUserID", tgUserID, "sessionState", session.State)
 		if isTransactionState(session.State) {

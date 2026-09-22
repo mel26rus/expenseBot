@@ -129,8 +129,10 @@ func (h *Handler) handleMessage(msg *tgbotapi.Message) {
 			slog.Error(fn_name+" error_3", "error", err)
 		}
 		slog.Debug("handlemessage", "response.IsSendMenuMessage", res.IsSendMenuMessage, "sendedMessage.MessageID", sendedMessage.MessageID)
-		h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, int64(sendedMessage.MessageID))
 	}
+	slog.Debug("handlemessage_2", "response.EditMessageId", response.EditMessageId)
+	//
+	//h.flow.SetUserSessionMessageId(context.Background(), msg.Chat.ID, int64(response.EditMessageId))
 
 }
 

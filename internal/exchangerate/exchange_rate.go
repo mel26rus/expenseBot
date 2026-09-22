@@ -21,9 +21,7 @@ type cbrLatestResponse struct {
 	Rates     map[string]float64 `json:"rates"`
 }
 
-// FetchRates принимает контекст, делает запрос, пересчитывает базу на USD и возвращает мапу
-func FetchRates(ctx context.Context) *Rates {
-
+func getLatestResponse(ctx context.Context) *cbrLatestResponse {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", constReatesUrl, nil)
@@ -49,6 +47,13 @@ func FetchRates(ctx context.Context) *Rates {
 		slog.Error("fetch_rates.decode_json", "Error", err)
 		return nil
 	}
+	return &rawData
+}
+
+// FetchRates принимает контекст, делает запрос, пересчитывает базу на USD и возвращает мапу
+func FetchRates(ctx context.Context) *Rates {
+
+	rawData := getLatestResponse(ctx)
 
 	apiDateTime := time.Unix(rawData.Timestamp, 0).UTC()
 

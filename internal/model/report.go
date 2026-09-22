@@ -15,12 +15,15 @@ type AccountReport struct {
 	Balance            float64
 	Income             float64
 	Expense            float64
+	Transfers          float64
 	TransactionsReport []*TransactionsReport
 	CurrencyName       string
 	ExRate             float64
 	ExDate             time.Time
 	USDBalance         float64
-	RUBBalance         float64
+	CustBalance        float64
+	USDExpence         float64
+	CustExpence        float64
 }
 
 type TransactionsReport struct {

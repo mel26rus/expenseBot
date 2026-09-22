@@ -32,7 +32,8 @@ func (a *App) Boot() {
 
 		bot, err := tgbotapi.NewBotAPIWithClient(a.Config.BotKey, tgbotapi.APIEndpoint, client)
 		if err != nil {
-			panic(err)
+			slog.Error("NewBotAPIWithClient", "Error", err)
+			return
 		}
 		bot.Debug = true
 		a.botAPI = bot
@@ -40,8 +41,8 @@ func (a *App) Boot() {
 		var err error
 		a.botAPI, err = tgbotapi.NewBotAPI(a.Config.BotKey)
 		if err != nil {
-			a.Logger.Error("bot init failed", "error", err)
-			panic(err)
+			slog.Error("bot init failed", "error", err)
+			return
 		}
 	}
 	slog.Info("Bot", "Авторизован под аккаунтом", a.botAPI.Self.UserName)

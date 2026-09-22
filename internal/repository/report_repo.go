@@ -34,13 +34,15 @@ const CONST_USER_ACCOUNTS = `
 		a.id,
 		a."name" acc_name, 
 		c.code curr_name, 
-		b.bal, 
-		ex.val as ex_val, 
-		ex.rate_date,
+		b.bal as balance, 
+		ex.val as ex_rate, 
+		ex.rate_date as ex_date,
 		(b.bal*c.multiple)/ex.val as usd_bal,
 		((b.bal*c.multiple)/ex.val) * ex_custom.val as cust_bal,
 		coalesce(tx.income,0.0) as income,
 		coalesce(tx.expence, 0.0) as expence,
+		coalesce(tx.expence, 0.0) * c.multiple / (case when 'USD' = c.code then 1 else coalesce(ex.val,1) end) *  ex_custom.val custom_expence,
+		coalesce(tx.expence, 0.0) * c.multiple / (case when 'USD' = c.code then 1 else coalesce(ex.val,1) end) usd_expence,		
 		coalesce(tx.transfers, 0.0) as transfers
 	from users u 
 	join accounts a on u.id = a.user_id 
@@ -177,7 +179,7 @@ func (r *ReportRepo) GetUserAccounts(
 	var accounts []*model.AccountReport
 	for rows.Next() {
 		var ac model.AccountReport
-		err := rows.Scan(&ac.AccountId, &ac.Title, &ac.CurrencyName, &ac.Balance, &ac.ExRate, &ac.ExDate, &ac.USDBalance, &ac.RUBBalance, &ac.Income, &ac.Expense)
+		err := rows.Scan(&ac.AccountId, &ac.Title, &ac.CurrencyName, &ac.Balance, &ac.ExRate, &ac.ExDate, &ac.USDBalance, &ac.CustBalance, &ac.Income, &ac.Expense, &ac.CustExpence, &ac.USDExpence, &ac.Transfers)
 		if err != nil {
 			return nil, err
 		}
@@ -207,6 +209,7 @@ func (r *ReportRepo) GetUsersHasTransactions(ctx context.Context, StartDate time
 			%s
 			AND t.created_at >= $1
 			AND t.created_at < $2
+			and t.tx_guid is null
 		ORDER BY u.id
 		`,
 		typeReportCondition,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"expense-bot/internal/model"
 	"expense-bot/internal/repository"
+	"log/slog"
 	"time"
 )
 
@@ -28,11 +29,13 @@ func (s *ReportService) BuildUserReport(
 
 	accounts, err := s.repo.GetUserAccounts(ctx, userID, start, end)
 	if err != nil {
+		slog.Error("s.repo.GetUserAccounts", "Error", err)
 		return nil, err
 	}
 
 	transactions, err := s.repo.GetAccountTransactions(ctx, userID, start, end)
 	if err != nil {
+		slog.Error("s.repo.GetAccountTransactions", "Error", err)
 		return nil, err
 	}
 

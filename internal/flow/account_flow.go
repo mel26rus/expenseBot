@@ -85,7 +85,7 @@ func (f *AccountFlow) HandleMessage(ctx context.Context, session model.Session, 
 	case userstate.StateWaitingCurrency:
 		slog.Debug("Recived currency by message", "text", text)
 		currencyCode, ok := parseCurrencyName(text)
-		slog.Debug("Parsed currensy from message", "currencyCode", currencyCode)
+		slog.Debug("Parsed currency from message", "currencyCode", currencyCode, "session.EditMessageId", session.EditMessageId)
 		if !ok {
 			f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
 			return Response{
@@ -104,6 +104,7 @@ func (f *AccountFlow) HandleMessage(ctx context.Context, session model.Session, 
 		}
 		var payload model.AccountPayload
 		json.Unmarshal(session.Payload, &payload)
+		// ++IDR
 		accountId, _ := f.accountService.CreateAccount(ctx, session.UserID, payload.Name, currencyId)
 		accountTitle := f.accountService.GetAccountTitle(ctx, accountId)
 		f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)

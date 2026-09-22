@@ -84,8 +84,10 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 		)
 	}
 
-	var totRUBAmount float64 = 0.00
+	var totCustAmount float64 = 0.00
 	var totUSDAmount float64 = 0.00
+	var totCustExpenceAmount float64 = 0.00
+	var totUSDExpenceAmount float64 = 0.00
 	var erDate time.Time
 	var exRate float64 = 0.00
 	for _, account := range report {
@@ -100,17 +102,21 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 				),
 			)
 
-			hasIncome := false
-			hasExpense := false
+			// hasIncome := false
+			// hasExpense := false
+
+			if account.Transfers != 0 {
+				sb.WriteString(fmt.Sprintf("📈 <b>Переводы</b> %s\n", formatAmount(account.Transfers)))
+			}
 
 			for _, tx := range account.TransactionsReport {
 
 				if tx.Amount > 0 {
 
-					if !hasIncome {
-						sb.WriteString("📈 <b>Доходы</b>\n")
-						hasIncome = true
-					}
+					// if !hasIncome {
+					// 	sb.WriteString("📈 <b>Доходы</b>\n")
+					// 	hasIncome = true
+					// }
 
 					sb.WriteString(
 						fmt.Sprintf(
@@ -122,13 +128,13 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 
 				} else {
 
-					if !hasExpense {
-						sb.WriteString("📉 <b>Расходы</b>\n")
-						hasExpense = true
-					}
+					// if !hasExpense {
+					// 	sb.WriteString("📉 <b>Расходы</b>\n")
+					// 	hasExpense = true
+					// }
 
 					text := fmt.Sprintf(
-						"• %-18s <b>%s</b>\n",
+						"• %-18s <b>-%s</b>\n",
 						emoji(tx.Category)+capitalize(tx.Category),
 						formatAmount(-tx.Amount),
 					)
@@ -139,24 +145,22 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 				}
 			}
 
-			//	sb.WriteString("\n")
+			if account.Expense < 0 {
+
+				sb.WriteString(
+					fmt.Sprintf(
+						"📉 Итого расходы: <b>%s</b>\n",
+						formatAmount(math.Abs(account.Expense)),
+					),
+				)
+			}
 
 			if account.Income > 0 {
 
 				sb.WriteString(
 					fmt.Sprintf(
-						"📈 Итого доход: <b>%s</b>\n",
+						"📈 Итого доходы: <b>%s</b>\n",
 						formatAmount(account.Income),
-					),
-				)
-			}
-
-			if account.Expense > 0 {
-
-				sb.WriteString(
-					fmt.Sprintf(
-						"📉 Итого расход: <b>%s</b>\n",
-						formatAmount(account.Expense),
 					),
 				)
 			}
@@ -174,9 +178,13 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 		if account.CurrencyName == "RUB" {
 			exRate = account.ExRate
 		}
-		totRUBAmount = totRUBAmount + account.RUBBalance
+		totCustAmount = totCustAmount + account.CustBalance
 		totUSDAmount = totUSDAmount + account.USDBalance
+		totCustExpenceAmount = totCustExpenceAmount + account.CustExpence
+		totUSDExpenceAmount = totUSDExpenceAmount + account.USDExpence
 		erDate = account.ExDate
+
+		slog.Debug("BuildReportText", "totCustExpenceAmount", totCustExpenceAmount, "totUSDExpenceAmount", totUSDExpenceAmount)
 	}
 
 	sb.WriteString(
@@ -186,10 +194,18 @@ func (r *ReportFlow) BuildReportText(report []*model.AccountReport, start time.T
 			formatAmount(exRate),
 		),
 	)
+
+	sb.WriteString(
+		fmt.Sprintf(
+			"💸 Расходы: %s RUB | %s USD \n",
+			formatAmount(math.Abs(totCustExpenceAmount)),
+			formatAmount(math.Abs(totUSDExpenceAmount)),
+		),
+	)
 	sb.WriteString(
 		fmt.Sprintf(
 			"💰 Общий: <code>%s</code> RUB\n",
-			formatAmount(totRUBAmount),
+			formatAmount(totCustAmount),
 		),
 	)
 	sb.WriteString(
