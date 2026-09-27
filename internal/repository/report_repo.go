@@ -30,7 +30,7 @@ const CONST_USER_ACCOUNTS = `
 		and t.created_at < $3
 	group by 1, 2
 	)
-	select 
+	select distinct
 		a.id,
 		a."name" acc_name, 
 		c.code curr_name, 
