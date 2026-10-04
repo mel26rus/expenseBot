@@ -28,7 +28,7 @@ func (j *DailyReportJob) NextRun(now time.Time) time.Time {
 		now.Year(),
 		now.Month(),
 		now.Day(),
-		6, 0, 0, 0,
+		2, 0, 0, 0,
 		now.Location(),
 	)
 

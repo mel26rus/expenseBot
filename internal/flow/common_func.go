@@ -155,3 +155,27 @@ func (f *TransactionFlow) generateFinalTxMessageWithTransfer(ctx context.Context
 	)
 	return messageText
 }
+
+func (f *TransactionFlow) generateFinalTxTransferSameCurrencyMessage(ctx context.Context, payload model.TxPayload) string {
+	balanceFrom := formatAmount(f.accountService.GetAccountBalance(ctx, payload.AccountID))
+	balanceTo := formatAmount(f.accountService.GetAccountBalance(ctx, payload.AccountToID))
+
+	messageText := fmt.Sprintf(
+		`
+🔁 <b>Перевод выполнен</b>
+🏦 <code>%s</code> → <code>%s</code>
+💸 <b>%s</b>
+💰 Балансы:
+• %s: <code>%s</code>
+• %s: <code>%s</code>
+			`,
+		f.accountService.GetAccountTitle(ctx, payload.AccountID),
+		f.accountService.GetAccountTitle(ctx, payload.AccountToID),
+		formatAmount(payload.Amount),
+		f.accountService.GetAccountTitle(ctx, payload.AccountID),
+		balanceFrom,
+		f.accountService.GetAccountTitle(ctx, payload.AccountToID),
+		balanceTo,
+	)
+	return messageText
+}

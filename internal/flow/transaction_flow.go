@@ -122,7 +122,7 @@ func (f *TransactionFlow) HandleMessage(ctx context.Context, session model.Sessi
 
 func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Session, data string) (Response, error) {
 
-	slog.Debug("TransactionFlow.HandleCallback: Got callback", "UserID", session.UserID, "data", data)
+	slog.Debug("TransactionFlow.HandleCallback: Got callback", "UserID", session.UserID, "user_state", session.State, "data", data)
 
 	var payload model.TxPayload
 	json.Unmarshal(session.Payload, &payload)
@@ -241,7 +241,7 @@ func (f *TransactionFlow) HandleCallback(ctx context.Context, session model.Sess
 		//если валюты одинаковые Комментарий не ждем просто пишем две транзакции и гуид группы
 		f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, payload)
 
-		messageText := f.generateFinalTxMessage(ctx, payload, f.accountService.GetAccountBalance(ctx, payload.AccountID))
+		messageText := f.generateFinalTxTransferSameCurrencyMessage(ctx, payload)
 
 		return Response{
 			Text:              messageText,
