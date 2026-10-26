@@ -3,6 +3,7 @@ package flow
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"expense-bot/internal/model"
 	"expense-bot/internal/service"
 	"expense-bot/internal/userstate"
@@ -96,20 +97,21 @@ func (f *AccountFlow) HandleMessage(ctx context.Context, session model.Session, 
 		currencyId, err := f.currencyService.Create(ctx, currencyCode)
 		if err != nil {
 			slog.Error("Create currency", "Error", err)
-			f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
-			return Response{
-				Text:          "😔😔😔 9_Ошибка создания валюты",
-				EditMessageId: session.EditMessageId,
-			}, nil
+			return f.currencyError(ctx, session, currencyCode, err), nil
 		}
 		var payload model.AccountPayload
 		json.Unmarshal(session.Payload, &payload)
 		// ++IDR
-		accountId, _ := f.accountService.CreateAccount(ctx, session.UserID, payload.Name, currencyId)
+		accountId, err := f.accountService.CreateAccount(ctx, session.UserID, payload.Name, currencyId)
+		if err != nil {
+			slog.Error("Create account", "error", err)
+			f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
+			return Response{Text: "Не удалось создать счёт. Попробуйте ещё раз.", EditMessageId: session.EditMessageId}, nil
+		}
 		accountTitle := f.accountService.GetAccountTitle(ctx, accountId)
 		f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
 		return Response{
-			Text:              fmt.Sprintf("✅ %s \n Счет создан,", accountTitle),
+			Text:              fmt.Sprintf("✅ %s \n Счёт создан", accountTitle),
 			EditMessageId:     session.EditMessageId,
 			IsSendMenuMessage: true,
 		}, nil
@@ -136,6 +138,24 @@ func (f *AccountFlow) HandleCallback(ctx context.Context, session model.Session,
 			slog.Error("Wrong command", "command", command)
 			return Response{Text: "Неверная команда"}, nil
 		}
+		currencies, err := f.currencyService.GetAll(ctx)
+		if err != nil {
+			return f.currencyError(ctx, session, "", err), nil
+		}
+		currencyCode := ""
+		for _, currency := range currencies {
+			if currency.ID == currencyID {
+				currencyCode = currency.Code
+				break
+			}
+		}
+		if currencyCode == "" {
+			return f.currencyError(ctx, session, "", service.ErrUnsupportedCurrency), nil
+		}
+		currencyID, err = f.currencyService.Create(ctx, currencyCode)
+		if err != nil {
+			return f.currencyError(ctx, session, currencyCode, err), nil
+		}
 
 		accoountId, err := f.accountService.CreateAccount(ctx, session.UserID, payload.Name, currencyID)
 		if err != nil {
@@ -157,4 +177,15 @@ func (f *AccountFlow) HandleCallback(ctx context.Context, session model.Session,
 	return Response{
 		Text:              "11_Ошибка Неизвестный колбек",
 		IsSendMenuMessage: true}, nil
+}
+
+func (f *AccountFlow) currencyError(ctx context.Context, session model.Session, code string, err error) Response {
+	f.sessionService.Set(ctx, session.UserID, userstate.StateIdle, nil)
+	message := "😔😔😔 9_Ошибка создания валюты"
+	if errors.Is(err, service.ErrUnsupportedCurrency) {
+		message = fmt.Sprintf("Валюта %s не найдена в источнике курсов. Проверьте код или введите другую валюту", code)
+	} else if errors.Is(err, service.ErrRatesUnavailable) {
+		message = "Не удалось проверить валюту. Попробуйте ещё раз позже"
+	}
+	return Response{Text: message, EditMessageId: session.EditMessageId}
 }

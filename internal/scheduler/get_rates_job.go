@@ -48,6 +48,9 @@ func (j *GetRatesJob) Run(ctx context.Context) error {
 	fn_name := "GetRatesJob.Run"
 	slog.Debug(fmt.Sprintf("+%s", fn_name))
 	result := exchangerate.FetchRates(ctx)
+	if result == nil {
+		return service.ErrRatesUnavailable
+	}
 	cur, err := j.CurrencyService.GetAll(ctx)
 	if err != nil {
 		slog.Error("GetRatesJob.Run_1", "Error", err)
@@ -60,6 +63,7 @@ func (j *GetRatesJob) Run(ctx context.Context) error {
 			_, err := j.ExchangeRateService.SaveRate(ctx, result.Date, c.Code, val)
 			if err != nil {
 				slog.Error("GetRatesJob.SaveRate", "Currency", c.Code, "Error", err)
+				return err
 			}
 		}
 	}

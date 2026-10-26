@@ -54,6 +54,9 @@ func getLatestResponse(ctx context.Context) *cbrLatestResponse {
 func FetchRates(ctx context.Context) *Rates {
 
 	rawData := getLatestResponse(ctx)
+	if rawData == nil {
+		return nil
+	}
 
 	apiDateTime := time.Unix(rawData.Timestamp, 0).UTC()
 

@@ -5,6 +5,7 @@ import (
 	"expense-bot/internal/model"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -51,17 +52,30 @@ func (r *ExchangeRateRepo) GetExchangeRates(ctx context.Context) ([]*model.Excha
 }
 
 func (r *ExchangeRateRepo) SaveRate(ctx context.Context, date time.Time, name string, value float64) (int64, error) {
-
-	var id int64
-	err := r.db.QueryRow(ctx, `
-		INSERT INTO exchange_rates (date, name, value)
-		VALUES ($1, $2, $3)
-		RETURNING id
-	`, date, name, value).Scan(&id)
-
+	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return 0, err
 	}
+	defer tx.Rollback(ctx)
+	id, err := saveRate(ctx, tx, date, name, value)
+	if err != nil {
+		return 0, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
 
+// Both user requests and scheduled updates share the lock and replace the same rate.
+func saveRate(ctx context.Context, tx pgx.Tx, date time.Time, name string, value float64) (int64, error) {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(73482910, hashtext($1))`, name); err != nil {
+		return 0, err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM exchange_rates WHERE date = $1 AND name = $2`, date, name); err != nil {
+		return 0, err
+	}
+	var id int64
+	err := tx.QueryRow(ctx, `INSERT INTO exchange_rates (date, name, value) VALUES ($1, $2, $3) RETURNING id`, date, name, value).Scan(&id)
 	return id, err
 }
